@@ -9,27 +9,25 @@ import (
 // and the integrity can be verified.
 type Proof struct {
 	verifier cosi.Verifier
-	block    blockchain.Block
+	block    Block
 }
 
 // NewProof creates a new proof.
-func NewProof(block blockchain.Block, v cosi.Verifier) Proof {
+func NewProof(block Block, v cosi.Verifier) Proof {
 	return Proof{
 		verifier: v,
 		block:    block,
 	}
 }
 
-// LatestBlock returns the block.
-func (p Proof) LatestBlock() blockchain.Block {
-	return p.block
+// Payload returns the data of block.
+func (p Proof) Payload() blockchain.Payload {
+	return p.block.Data
 }
 
 // Verify insures the integrity of the proof.
 func (p Proof) Verify() error {
-	payload := p.block.Payload.(Payload)
-
-	err := p.verifier(p.block, payload.Signature)
+	err := p.verifier(p.block.Roster, p.block, p.block.Signature)
 	if err != nil {
 		return err
 	}

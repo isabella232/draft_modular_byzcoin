@@ -2,6 +2,7 @@ package skipchain
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding"
 	"errors"
 
@@ -12,27 +13,50 @@ import (
 	"go.dedis.ch/phoenix/utils"
 )
 
+// Roster is the representation of a membership.
+type Roster []onet.Identity
+
+// Block is the representation of the data structures that will be linked
+// together.
+type Block struct {
+	Index     int64
+	Roster    Roster
+	Signature cosi.Signature
+	Data      blockchain.Payload
+}
+
+// Hash returns a unique hash for each block.
+func (b Block) Hash() ([]byte, error) {
+	h := sha256.New()
+
+	databuf, err := b.Data.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = h.Write(databuf)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.Sum(nil), nil
+}
+
 // Data is the representation of the stored data.
 type Data interface {
 	encoding.BinaryMarshaler
-}
-
-// Payload is the data structure stored in the chain.
-type Payload struct {
-	Data      Data
-	Signature cosi.Signature
-}
-
-// MarshalBinary implements the BinaryMarshaler interface.
-func (p Payload) MarshalBinary() ([]byte, error) {
-	return p.Data.MarshalBinary()
 }
 
 type blockValidator struct {
 	db Database
 }
 
-func (b blockValidator) Validate(block blockchain.Block) error {
+func (b blockValidator) Validate(msg cosi.Hashable) error {
+	block, ok := msg.(Block)
+	if !ok {
+		return errors.New("unknown type of message")
+	}
+
 	last, err := b.db.ReadLast()
 	if err != nil {
 		return err
@@ -69,24 +93,15 @@ func NewSkipchain() *Skipchain {
 
 // Store creates a new block with the data as the payload.
 func (s *Skipchain) Store(data blockchain.Payload) error {
-	payload := Payload{
-		Data: data,
-	}
-
 	last, err := s.db.ReadLast()
 	if err != nil {
 		return err
 	}
 
-	roster := blockchain.Roster{}
-	for _, m := range s.onet.Membership() {
-		roster = append(roster, m)
-	}
-
-	block := blockchain.Block{
-		Index:   last.Index + 1,
-		Roster:  roster,
-		Payload: payload,
+	block := Block{
+		Index:  last.Index + 1,
+		Roster: s.onet.Membership(),
+		Data:   data,
 	}
 
 	sig, err := s.cosi.Sign(block)
@@ -94,10 +109,9 @@ func (s *Skipchain) Store(data blockchain.Payload) error {
 		return err
 	}
 
-	payload.Signature = sig
-	block.Payload = payload
+	block.Signature = sig
 
-	err = s.db.Write(block.Index, block)
+	err = s.db.Write(block)
 	if err != nil {
 		return err
 	}

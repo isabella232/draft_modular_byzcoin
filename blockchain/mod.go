@@ -12,20 +12,11 @@ type Payload interface {
 	encoding.BinaryMarshaler
 }
 
-type Roster []interface{}
-
-// Block is the data structure of the blocks.
-type Block struct {
-	Index   int64
-	Roster  Roster
-	Payload Payload
-}
-
 // Proof is the interface that provides the primitives to verify that a
 // block is valid w.r.t. the genesis block.
 type Proof interface {
-	// LatestBlock returns the last block of the proof.
-	LatestBlock() Block
+	// Payload returns the data of the latest block.
+	Payload() Payload
 
 	// Verify makes sure that the integrity of the block from the genesis block
 	// is correct.
@@ -33,9 +24,7 @@ type Proof interface {
 }
 
 // Event is the data structure sent back to observers.
-type Event struct {
-	Block Block
-}
+type Event struct{}
 
 // Blockchain is the interface that provides the primitives to interact with the
 // blockchain.
