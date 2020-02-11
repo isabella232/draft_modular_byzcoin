@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package skipchain;
+
+import "google/protobuf/any.proto";
+
+message BlockMessage {
+    int64 index = 1;
+    google.protobuf.Any data = 2;
+}

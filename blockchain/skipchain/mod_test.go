@@ -3,29 +3,28 @@ package skipchain
 import (
 	"testing"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/require"
 )
 
-type value struct {
-	str string
-}
-
-func (v value) MarshalBinary() ([]byte, error) {
-	return []byte(v.str), nil
+func validate(b Block) error {
+	return nil
 }
 
 func TestSkipchain_SimpleScenario(t *testing.T) {
-	sc1 := NewSkipchain()
-	NewSkipchain()
-	NewSkipchain()
+	sc1 := NewSkipchain(validate)
+	NewSkipchain(validate)
+	NewSkipchain(validate)
 
-	err := sc1.Store(value{str: "this is a simple text"})
+	ts := ptypes.TimestampNow()
+
+	err := sc1.Store(ts)
 	require.NoError(t, err)
 
-	err = sc1.Store(value{str: "this is a simple text"})
+	err = sc1.Store(ts)
 	require.NoError(t, err)
 
-	err = sc1.Store(value{str: "this is a simple text"})
+	err = sc1.Store(ts)
 	require.NoError(t, err)
 
 	proof, err := sc1.GetProof()

@@ -1,22 +1,29 @@
+// Package onet is the public API for the overlay network.
+//
+// Note: encoding must be self-describing.
 package onet
 
-import "context"
+import "github.com/golang/protobuf/proto"
 
 type Identity interface{}
 
-// Message is an interface that represents the messages passed from a peer
-// to another.
-type Message interface{}
+// RPC is a representation of a remote procedure call that can call a single
+// distant procedure or multiple.
+type RPC interface {
+	Collect(req proto.Message) (<-chan proto.Message, error)
+	Call(addr string, req proto.Message) (proto.Message, error)
+}
 
-// Handler receives a message as input and produces a response, or an error
-// if something goes wrong.
-type Handler func(context.Context, Message) (Message, error)
+// Handler is the interface to implement to create a public endpoint.
+type Handler interface {
+	Process(req proto.Message) (resp proto.Message, err error)
+}
 
-// Onet is an interface that provides primitives to communicate with
-// members of a network.
+// Onet is a representation of a overlay network that allows the creation
+// of namespaces for internal protocols and associate handlers to it.
 type Onet interface {
 	Identity() Identity
 	Membership() []Identity
-	Collect(msg Message) (<-chan Message, error)
-	MakeHandler(id string, h Handler) Onet
+	MakeNamespace(ns string) Onet
+	MakeRPC(name string, h Handler) RPC
 }

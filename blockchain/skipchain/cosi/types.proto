@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package cosi;
+
+import "google/protobuf/any.proto";
+
+message SignatureRequest {
+    google.protobuf.Any message = 1;
+}
+
+message SignatureResponse {
+    bytes signature = 1;
+}

@@ -1,7 +1,7 @@
 package skipchain
 
 import (
-	"go.dedis.ch/phoenix/blockchain"
+	proto "github.com/golang/protobuf/proto"
 	"go.dedis.ch/phoenix/blockchain/skipchain/cosi"
 )
 
@@ -21,13 +21,18 @@ func NewProof(block Block, v cosi.Verifier) Proof {
 }
 
 // Payload returns the data of block.
-func (p Proof) Payload() blockchain.Payload {
+func (p Proof) Payload() proto.Message {
 	return p.block.Data
 }
 
 // Verify insures the integrity of the proof.
 func (p Proof) Verify() error {
-	err := p.verifier(p.block.Roster, p.block, p.block.Signature)
+	hash, err := p.block.hash()
+	if err != nil {
+		return err
+	}
+
+	err = p.verifier(p.block.Roster, hash, p.block.Signature)
 	if err != nil {
 		return err
 	}
