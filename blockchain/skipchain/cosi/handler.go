@@ -48,3 +48,8 @@ func (h handler) Process(msg proto.Message) (proto.Message, error) {
 
 	return nil, errors.New("unknown type of message")
 }
+
+func (h handler) Combine(reqs []proto.Message) ([]proto.Message, error) {
+	// This is a chance to aggregate the signature requests for instance..
+	return reqs, nil
+}

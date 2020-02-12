@@ -16,7 +16,13 @@ type RPC interface {
 
 // Handler is the interface to implement to create a public endpoint.
 type Handler interface {
+	// Process handles a single request by producing the response according to
+	// the request message.
 	Process(req proto.Message) (resp proto.Message, err error)
+
+	// Combine gives a chance to reduce the network load by combining multiple
+	// messages for a collect call on the intermediate nodes.
+	Combine(req []proto.Message) (resp []proto.Message, err error)
 }
 
 // Onet is a representation of a overlay network that allows the creation
