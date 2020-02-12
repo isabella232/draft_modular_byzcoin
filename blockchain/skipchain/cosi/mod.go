@@ -36,13 +36,13 @@ type Validator interface {
 // BlsCoSi is an implementation of the collective signing interface by
 // using BLS signatures.
 type BlsCoSi struct {
-	onet onet.RPC
+	rpc onet.RPC
 }
 
 // NewBlsCoSi returns a new collective signing instance.
 func NewBlsCoSi(o onet.Onet, v Validator) *BlsCoSi {
 	return &BlsCoSi{
-		onet: o.MakeRPC("cosi", newHandler(o, v)),
+		rpc: o.MakeRPC("cosi", newHandler(o, v)),
 	}
 }
 
@@ -53,7 +53,7 @@ func (cosi *BlsCoSi) Sign(msg proto.Message) (Signature, error) {
 		return nil, err
 	}
 
-	msgs, err := cosi.onet.Collect(&SignatureRequest{Message: data})
+	msgs, err := cosi.rpc.Collect(&SignatureRequest{Message: data})
 	if err != nil {
 		return nil, err
 	}

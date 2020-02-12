@@ -143,7 +143,7 @@ func (s *Skipchain) Store(data proto.Message) error {
 		return err
 	}
 
-	s.watcher.Notify(block)
+	s.watcher.Notify(blockchain.Event{})
 
 	return nil
 }

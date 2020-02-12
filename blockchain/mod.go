@@ -16,6 +16,8 @@ type Proof interface {
 	// Verify makes sure that the integrity of the block from the genesis block
 	// is correct.
 	Verify() error
+
+	Pack() proto.Message
 }
 
 // Event is the data structure sent back to observers.

@@ -8,3 +8,7 @@ message BlockMessage {
     int64 index = 1;
     google.protobuf.Any data = 2;
 }
+
+message ProofMessage {
+    BlockMessage block = 1;
+}

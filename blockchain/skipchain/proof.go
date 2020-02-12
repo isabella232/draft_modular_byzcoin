@@ -39,3 +39,10 @@ func (p Proof) Verify() error {
 
 	return nil
 }
+
+// Pack creates a proof message that can be sent over the network.
+func (p Proof) Pack() proto.Message {
+	return &ProofMessage{
+		Block: p.block.Pack().(*BlockMessage),
+	}
+}
