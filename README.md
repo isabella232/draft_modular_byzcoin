@@ -124,3 +124,7 @@ same way. No intermodules communication. Then, each RPC can be called
 either on multiple peers or on a single one. Think about CoSi: The
 overlay takes care of gathering the replies in an optimize way to every
 online node.
+
+## Class diagram
+
+![class UML](docs/class.png)
