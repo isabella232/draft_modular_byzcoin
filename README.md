@@ -5,14 +5,14 @@ framework could be better split into smaller modules. Each module should
 be more easily replacable, which is currently not the case. Indeed,
 right now changing part of the framework is nearly impossible without
 changes from top to bottom, all due to the evolution of cothority that
-eventually led us with plate of spaghetti code. (We love spaghetti
-though!)
+eventually led us with to a plate of spaghetti code. (When it's not in
+the code, we love spaghetti though!)
 
 This modularization will be helpful when planning student projects (PhD
 students too) as they will be able to focus on one or few modules at a
-time. It would also help the creation of a unit test suite that could
-replace the current Travis workflow to bring it down to a few minutes
-duration instead of an hour.
+time. It will also help with the creation of a unit test suite that will
+be able to replace the current Travis workflow, bringing it down to a
+few minutes duration instead of an hour.
 
 ## The Big Picture
 
