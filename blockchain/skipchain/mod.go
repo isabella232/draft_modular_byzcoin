@@ -16,14 +16,11 @@ import (
 
 //go:generate protoc -I ./ --go_out=./ ./types.proto
 
-// Roster is the representation of a membership.
-type Roster []onet.Identity
-
 // Block is the representation of the data structures that will be linked
 // together.
 type Block struct {
 	Index     int64
-	Roster    Roster
+	Roster    blockchain.Roster
 	Signature cosi.Signature
 	Data      proto.Message
 }
@@ -106,9 +103,9 @@ type Skipchain struct {
 }
 
 // NewSkipchain creates a new skipchain-powered blockchain.
-func NewSkipchain(v PayloadValidator) *Skipchain {
+func NewSkipchain(addr onet.Address, v PayloadValidator) *Skipchain {
 	db := NewInMemoryDatabase()
-	onet := local.NewLocalOnet()
+	onet := local.NewLocalOnet(addr.(local.Address))
 
 	return &Skipchain{
 		db:      db,
@@ -119,7 +116,7 @@ func NewSkipchain(v PayloadValidator) *Skipchain {
 }
 
 // Store creates a new block with the data as the payload.
-func (s *Skipchain) Store(data proto.Message) error {
+func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 	last, err := s.db.ReadLast()
 	if err != nil {
 		return err
@@ -127,11 +124,11 @@ func (s *Skipchain) Store(data proto.Message) error {
 
 	block := Block{
 		Index:  last.Index + 1,
-		Roster: s.onet.Membership(),
+		Roster: ro,
 		Data:   data,
 	}
 
-	sig, err := s.cosi.Sign(block.Pack())
+	sig, err := s.cosi.Sign(ro, block.Pack())
 	if err != nil {
 		return err
 	}

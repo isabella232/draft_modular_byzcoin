@@ -7,6 +7,7 @@ import (
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/sign/bls"
 	"go.dedis.ch/kyber/v3/util/key"
+	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/onet"
 )
 
@@ -16,7 +17,7 @@ var suite = pairing.NewSuiteBn256()
 
 // Verifier is the function used to make sure a signature matches the message
 // with a specific list of identities.
-type Verifier func(roster []onet.Identity, msg []byte, sig []byte) error
+type Verifier func(roster blockchain.Roster, msg []byte, sig []byte) error
 
 // Signature is the response type of a collective signing protocol.
 type Signature []byte
@@ -24,7 +25,7 @@ type Signature []byte
 // CollectiveSigning is the interface that provides the primitives to sign
 // a message by members of a network.
 type CollectiveSigning interface {
-	Sign(msg proto.Message) (Signature, error)
+	Sign(ro blockchain.Roster, msg proto.Message) (Signature, error)
 	MakeVerifier() Verifier
 }
 
@@ -47,13 +48,13 @@ func NewBlsCoSi(o onet.Onet, v Validator) *BlsCoSi {
 }
 
 // Sign returns the collective signature of the block.
-func (cosi *BlsCoSi) Sign(msg proto.Message) (Signature, error) {
+func (cosi *BlsCoSi) Sign(ro blockchain.Roster, msg proto.Message) (Signature, error) {
 	data, err := ptypes.MarshalAny(msg)
 	if err != nil {
 		return nil, err
 	}
 
-	msgs, err := cosi.rpc.Collect(&SignatureRequest{Message: data})
+	msgs, err := cosi.rpc.Call(&SignatureRequest{Message: data}, ro...)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (cosi *BlsCoSi) MakeVerifier() Verifier {
 }
 
 // BlsVerifier verifies that a signature matches the message for the roster public keys.
-func blsVerifier(roster []onet.Identity, msg []byte, sig []byte) error {
+func blsVerifier(roster blockchain.Roster, msg []byte, sig []byte) error {
 	points := make([]kyber.Point, 0)
 
 	for _, identity := range roster {

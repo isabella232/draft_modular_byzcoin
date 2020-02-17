@@ -4,8 +4,11 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
+	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/utils"
 )
+
+type Roster []onet.Address
 
 // Proof is the interface that provides the primitives to verify that a
 // block is valid w.r.t. the genesis block.
@@ -28,7 +31,7 @@ type Event struct{}
 type Blockchain interface {
 	// Store stores any representation of a data structure into a new block.
 	// The implementation is responsible for any validations required.
-	Store(data proto.Message) error
+	Store(ro Roster, data proto.Message) error
 
 	// GetProof returns a valid proof of the latest block.
 	GetProof() (Proof, error)

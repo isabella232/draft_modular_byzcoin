@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/blockchain/skipchain"
 	"go.dedis.ch/phoenix/ledger"
@@ -33,7 +33,8 @@ func (s State) Pack() proto.Message {
 }
 
 type Byzcoin struct {
-	bc blockchain.Blockchain
+	roster blockchain.Roster
+	bc     blockchain.Blockchain
 }
 
 func (b *Byzcoin) AddTransaction(in proto.Message) error {
@@ -42,7 +43,7 @@ func (b *Byzcoin) AddTransaction(in proto.Message) error {
 		return errors.New("wrong type of transaction")
 	}
 
-	err := b.bc.Store(tx)
+	err := b.bc.Store(b.roster, tx)
 	if err != nil {
 		return err
 	}

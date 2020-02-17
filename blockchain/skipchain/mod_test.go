@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/require"
+	"go.dedis.ch/phoenix/blockchain"
 )
 
 func validate(b Block) error {
@@ -12,19 +13,20 @@ func validate(b Block) error {
 }
 
 func TestSkipchain_SimpleScenario(t *testing.T) {
-	sc1 := NewSkipchain(validate)
-	NewSkipchain(validate)
-	NewSkipchain(validate)
+	ro := blockchain.Roster{"a", "b", "c"}
+	sc1 := NewSkipchain(ro[0], validate)
+	NewSkipchain(ro[1], validate)
+	NewSkipchain(ro[1], validate)
 
 	ts := ptypes.TimestampNow()
 
-	err := sc1.Store(ts)
+	err := sc1.Store(ro, ts)
 	require.NoError(t, err)
 
-	err = sc1.Store(ts)
+	err = sc1.Store(ro, ts)
 	require.NoError(t, err)
 
-	err = sc1.Store(ts)
+	err = sc1.Store(ro, ts)
 	require.NoError(t, err)
 
 	proof, err := sc1.GetProof()

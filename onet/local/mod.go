@@ -5,18 +5,20 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"go.dedis.ch/kyber/v3/pairing"
-	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/onet"
 )
 
 var suite = pairing.NewSuiteBn256()
 
+// Address is the address of an onet instance.
+type Address string
+
 type localManager struct {
-	instances []*Onet
+	instances map[Address]*Onet
 }
 
 var manager = localManager{
-	instances: make([]*Onet, 0),
+	instances: make(map[Address]*Onet),
 }
 
 // RPC is a registered handler that can send messages to other participants
@@ -26,12 +28,13 @@ type RPC struct {
 	h    onet.Handler
 }
 
-// Collect sends the message to all participants and gather their reply.
-func (rpc *RPC) Collect(req proto.Message) (<-chan proto.Message, error) {
+// Call sends the message to all participants and gather their reply.
+func (rpc *RPC) Call(req proto.Message, addrs ...onet.Address) (<-chan proto.Message, error) {
 	out := make(chan proto.Message, 1)
 
 	go func() {
-		for _, peer := range manager.instances {
+		for _, addr := range addrs {
+			peer := manager.instances[addr.(Address)]
 			resp, err := peer.rpcs[rpc.path].h.Process(req)
 			if err != nil {
 				fmt.Printf("Error: %v\n", err)
@@ -48,52 +51,34 @@ func (rpc *RPC) Collect(req proto.Message) (<-chan proto.Message, error) {
 	return out, nil
 }
 
-// Call performs a single rpc call.
-func (rpc *RPC) Call(addr string, req proto.Message) (proto.Message, error) {
-	return rpc.h.Process(req)
-}
-
 // Onet provides helpers to create handlers.
 type Onet struct {
-	path     string
-	rpcs     map[string]*RPC
-	identity onet.Identity
+	addr Address
+	path string
+	rpcs map[string]*RPC
 }
 
 // NewLocalOnet creates a new onet instance.
-func NewLocalOnet() *Onet {
-	kp := key.NewKeyPair(suite)
-
+func NewLocalOnet(addr Address) *Onet {
 	o := &Onet{
-		path:     "v1",
-		rpcs:     make(map[string]*RPC),
-		identity: kp,
+		addr: addr,
+		path: "",
+		rpcs: make(map[string]*RPC),
 	}
-	manager.instances = append(manager.instances, o)
+	manager.instances[addr] = o
 	return o
 }
 
-// Identity returns the identity of the current onet.
-func (o *Onet) Identity() onet.Identity {
-	return o.identity
-}
-
-// Membership returns the participants.
-func (o *Onet) Membership() []onet.Identity {
-	m := make([]onet.Identity, 0)
-	for _, p := range manager.instances {
-		m = append(m, p.Identity())
-	}
-
-	return m
+// Address returns the address.
+func (o *Onet) Address() onet.Address {
+	return o.addr
 }
 
 // MakeNamespace creates a new namespace for the overlay.
 func (o *Onet) MakeNamespace(name string) onet.Onet {
 	return &Onet{
-		path:     fmt.Sprintf("%s/%s", o.path, name),
-		rpcs:     o.rpcs,
-		identity: o.identity,
+		path: fmt.Sprintf("%s/%s", o.path, name),
+		rpcs: o.rpcs,
 	}
 }
 

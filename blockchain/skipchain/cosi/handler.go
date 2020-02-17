@@ -11,6 +11,8 @@ import (
 )
 
 type handler struct {
+	onet.DefaultHandler
+	keyPair   *key.Pair
 	onet      onet.Onet
 	validator Validator
 }
@@ -36,9 +38,7 @@ func (h handler) Process(msg proto.Message) (proto.Message, error) {
 			return nil, err
 		}
 
-		id := h.onet.Identity().(*key.Pair)
-
-		sig, err := bls.Sign(suite, id.Private, buf)
+		sig, err := bls.Sign(suite, h.keyPair.Private, buf)
 		if err != nil {
 			return nil, err
 		}
@@ -47,9 +47,4 @@ func (h handler) Process(msg proto.Message) (proto.Message, error) {
 	}
 
 	return nil, errors.New("unknown type of message")
-}
-
-func (h handler) Combine(reqs []proto.Message) ([]proto.Message, error) {
-	// This is a chance to aggregate the signature requests for instance..
-	return reqs, nil
 }

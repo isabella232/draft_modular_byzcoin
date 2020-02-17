@@ -5,13 +5,13 @@ package onet
 
 import "github.com/golang/protobuf/proto"
 
-type Identity interface{}
+// Address represents a unique member of a network.
+type Address interface{}
 
 // RPC is a representation of a remote procedure call that can call a single
 // distant procedure or multiple.
 type RPC interface {
-	Collect(req proto.Message) (<-chan proto.Message, error)
-	Call(addr string, req proto.Message) (proto.Message, error)
+	Call(req proto.Message, addrs ...Address) (<-chan proto.Message, error)
 }
 
 // Handler is the interface to implement to create a public endpoint.
@@ -25,11 +25,18 @@ type Handler interface {
 	Combine(req []proto.Message) (resp []proto.Message, err error)
 }
 
+// DefaultHandler implements optional functions.
+type DefaultHandler struct{}
+
+// Combine returns the messages without combining them.
+func (h DefaultHandler) Combine(req []proto.Message) ([]proto.Message, error) {
+	return req, nil
+}
+
 // Onet is a representation of a overlay network that allows the creation
 // of namespaces for internal protocols and associate handlers to it.
 type Onet interface {
-	Identity() Identity
-	Membership() []Identity
+	Address() Address
 	MakeNamespace(ns string) Onet
 	MakeRPC(name string, h Handler) RPC
 }
