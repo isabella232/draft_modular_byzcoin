@@ -1,15 +1,14 @@
 package pedersen
 
 import (
-	"go.dedis.ch/phoenix/dkg"
+	"context"
+	"log"
+
+	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/onet"
+	"go.dedis.ch/phoenix/types"
 )
-
-// TODO: think about a stream based interaction with onet setting up
-// a mesh so that the DKG can be done in one shot and then clean all
-// the resources. (grpc duplex feature...).
-
-//go:generate protoc -I ./ --go_out=./ ./messages.proto
 
 // DKG is the implementation of the Pedersen DKG algorithm.
 type DKG struct {
@@ -17,8 +16,8 @@ type DKG struct {
 }
 
 // New instantiates a new module of the Pedersen DKG.
-func New(o onet.Onet) *DKG {
-	rpc := o.MakeRPC("pdkg", newHandler(o))
+func New(o onet.Onet, kp *key.Pair, publicKeys []kyber.Point) *DKG {
+	rpc := o.MakeRPC("pdkg", newHandler(kp, publicKeys))
 
 	return &DKG{
 		rpc: rpc,
@@ -27,6 +26,30 @@ func New(o onet.Onet) *DKG {
 
 // Create starts a new distributed key generation. Each participant will store
 // its own share and the caller can only orchestrate without participating.
-func (p *DKG) Create(roster []onet.Address) (*dkg.SharedSecret, error) {
-	return &dkg.SharedSecret{}, nil
+func (p *DKG) Create(roster []*types.Address) (kyber.Point, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sender, out := p.rpc.Stream(ctx, roster...)
+
+	err := sender.Send(&types.DKGInit{Addresses: roster}, roster...)
+	if err != nil {
+		return nil, err
+	}
+
+	var publicKey kyber.Point
+	for i := 0; i < len(roster); i++ {
+		_, msg, err := out.Recv(context.Background())
+		if err != nil {
+			return nil, err
+		}
+
+		resp := msg.(*types.DKGDone)
+		log.Printf("Public Key: %x\n", resp.GetPublicKey())
+
+		publicKey = Suite.Point()
+		publicKey.UnmarshalBinary(resp.GetPublicKey())
+	}
+
+	return publicKey, nil
 }

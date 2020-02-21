@@ -32,7 +32,7 @@ func (p Proof) Verify() error {
 		return err
 	}
 
-	err = p.verifier(p.block.Roster, hash, p.block.Signature)
+	err = p.verifier(nil, hash, p.block.Signature)
 	if err != nil {
 		return err
 	}

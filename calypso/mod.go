@@ -33,7 +33,7 @@ func NewCalypso(o onet.Onet) *Calypso {
 	sce.Register("calypso", SmartContract{})
 
 	return &Calypso{
-		dkg: pedersen.New(o),
+		dkg: pedersen.New(o, nil, nil),
 		sce: sce,
 	}
 }
@@ -48,11 +48,11 @@ func (c *Calypso) AddWrite() error {
 	return nil
 }
 
-func (c *Calypso) createLTS() (*dkg.SharedSecret, error) {
-	share, err := c.dkg.Create(nil)
+func (c *Calypso) createLTS() error {
+	_, err := c.dkg.Create(nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return share, nil
+	return nil
 }

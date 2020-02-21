@@ -11,6 +11,7 @@ import (
 	"go.dedis.ch/phoenix/blockchain/skipchain/cosi"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/onet/local"
+	"go.dedis.ch/phoenix/types"
 	"go.dedis.ch/phoenix/utils"
 )
 
@@ -103,9 +104,9 @@ type Skipchain struct {
 }
 
 // NewSkipchain creates a new skipchain-powered blockchain.
-func NewSkipchain(addr onet.Address, v PayloadValidator) *Skipchain {
+func NewSkipchain(addr *types.Address, v PayloadValidator) *Skipchain {
 	db := NewInMemoryDatabase()
-	onet := local.NewLocalOnet(addr.(local.Address))
+	onet := local.NewLocalOnet(addr)
 
 	return &Skipchain{
 		db:      db,

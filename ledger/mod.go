@@ -29,12 +29,13 @@ type Transaction interface {
 // TransactionFactory is an interface to give an implementation of a ledger
 // a chance to format the transactions with a specific format.
 type TransactionFactory interface {
-	Create() Transaction
+	Create(args ...proto.Message) Transaction
 }
 
 // Ledger is the interface that provides primitives to update a public ledger
 // through transactions.
 type Ledger interface {
+	// The factory should be instantiated with stuff like the signer.
 	GetTransactionFactory() TransactionFactory
 	GetState(key string) (State, error)
 	AddTransaction(tx Transaction) error

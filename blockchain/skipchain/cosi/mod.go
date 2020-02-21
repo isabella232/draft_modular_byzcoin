@@ -6,7 +6,6 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/sign/bls"
-	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/onet"
 )
@@ -17,7 +16,7 @@ var suite = pairing.NewSuiteBn256()
 
 // Verifier is the function used to make sure a signature matches the message
 // with a specific list of identities.
-type Verifier func(roster blockchain.Roster, msg []byte, sig []byte) error
+type Verifier func(pubkeys []kyber.Point, msg []byte, sig []byte) error
 
 // Signature is the response type of a collective signing protocol.
 type Signature []byte
@@ -88,16 +87,10 @@ func (cosi *BlsCoSi) MakeVerifier() Verifier {
 }
 
 // BlsVerifier verifies that a signature matches the message for the roster public keys.
-func blsVerifier(roster blockchain.Roster, msg []byte, sig []byte) error {
-	points := make([]kyber.Point, 0)
+func blsVerifier(publicKeys []kyber.Point, msg []byte, sig []byte) error {
+	aggKey := bls.AggregatePublicKeys(suite, publicKeys...)
 
-	for _, identity := range roster {
-		points = append(points, identity.(*key.Pair).Public)
-	}
-
-	publicKey := bls.AggregatePublicKeys(suite, points...)
-
-	err := bls.Verify(suite, publicKey, msg, sig)
+	err := bls.Verify(suite, aggKey, msg, sig)
 	if err != nil {
 		return err
 	}

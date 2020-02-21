@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package types;
+
+import "google/protobuf/any.proto";
+
+message Address {
+    string id = 1;
+}
+
+message Envelope {
+    Address from = 1;
+    repeated Address to = 2;
+    google.protobuf.Any message = 3;
+}
+
+message DKGInit {
+    repeated Address addresses = 1;
+}
+
+message EncryptedDeal {
+    bytes DHKey = 1;
+    bytes Signature = 2;
+    bytes Nonce = 3;
+    bytes Cipher = 4;
+}
+
+message DKGDeal {
+    uint32 index = 1;
+    EncryptedDeal deal = 2;
+    bytes signature = 3;
+}
+
+message DKGResponse {
+    message Response {
+        bytes sessionID = 1;
+        uint32 index = 2;
+        bool status = 3;
+        bytes signature = 4;
+    }
+
+    uint32 index = 1;
+    Response response = 2;
+}
+
+message DKGDone {
+    bytes publicKey = 1;
+}

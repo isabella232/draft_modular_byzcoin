@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package pedersen;
-
-message Deal {
-    bytes data = 1;
-}

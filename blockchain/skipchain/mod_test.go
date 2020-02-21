@@ -6,6 +6,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/phoenix/blockchain"
+	"go.dedis.ch/phoenix/onet/local"
 )
 
 func validate(b Block) error {
@@ -13,7 +14,7 @@ func validate(b Block) error {
 }
 
 func TestSkipchain_SimpleScenario(t *testing.T) {
-	ro := blockchain.Roster{"a", "b", "c"}
+	ro := blockchain.Roster{local.NewAddress("a"), local.NewAddress("b"), local.NewAddress("c")}
 	sc1 := NewSkipchain(ro[0], validate)
 	NewSkipchain(ro[1], validate)
 	NewSkipchain(ro[1], validate)
