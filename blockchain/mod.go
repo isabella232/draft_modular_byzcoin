@@ -24,9 +24,6 @@ type Proof interface {
 	Pack() proto.Message
 }
 
-// Event is the data structure sent back to observers.
-type Event struct{}
-
 // Blockchain is the interface that provides the primitives to interact with the
 // blockchain.
 type Blockchain interface {

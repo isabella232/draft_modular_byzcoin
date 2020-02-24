@@ -4,32 +4,20 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
+	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/types"
 )
-
-// TransactionResult is the data structure sent back when a transaction is
-// stored in the chain.
-type TransactionResult struct {
-	ID       []byte
-	Accepted bool
-}
-
-// State is a verifiable value stored in the chain.
-type State interface {
-	Value() []byte
-	Verify() error
-	Pack() proto.Message
-}
 
 // Transaction is a set of instructions to be applied to the global state
 // one after another.
 type Transaction interface {
-	proto.Message
+	Pack() (proto.Message, error)
 }
 
 // TransactionFactory is an interface to give an implementation of a ledger
 // a chance to format the transactions with a specific format.
 type TransactionFactory interface {
-	Create(args ...proto.Message) Transaction
+	Create(contractID scm.ID, action scm.Action, in proto.Message) (Transaction, error)
 }
 
 // Ledger is the interface that provides primitives to update a public ledger
@@ -37,7 +25,10 @@ type TransactionFactory interface {
 type Ledger interface {
 	// The factory should be instantiated with stuff like the signer.
 	GetTransactionFactory() TransactionFactory
-	GetState(key string) (State, error)
+
+	// AddTransaction gossips the transaction to add it to the ledger.
 	AddTransaction(tx Transaction) error
-	Watch(ctx context.Context) <-chan TransactionResult
+
+	// Watch notifies the channel for every new transaction.
+	Watch(ctx context.Context) <-chan *types.TransactionResult
 }

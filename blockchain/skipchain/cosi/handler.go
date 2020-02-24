@@ -17,9 +17,10 @@ type handler struct {
 	validator Validator
 }
 
-func newHandler(o onet.Onet, v Validator) handler {
+func newHandler(o onet.Onet, kp *key.Pair, v Validator) handler {
 	return handler{
 		onet:      o,
+		keyPair:   kp,
 		validator: v,
 	}
 }

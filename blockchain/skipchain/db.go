@@ -26,9 +26,9 @@ func NewInMemoryDatabase() *InMemoryDatabase {
 }
 
 func (db *InMemoryDatabase) Write(block Block) error {
-	if int64(len(db.blocks)) == block.Index {
+	if uint64(len(db.blocks)) == block.Index {
 		db.blocks = append(db.blocks, block)
-	} else if int64(len(db.blocks)) > block.Index {
+	} else if uint64(len(db.blocks)) > block.Index {
 		db.blocks[block.Index] = block
 	} else {
 		return errors.New("missing intermediate blocks")

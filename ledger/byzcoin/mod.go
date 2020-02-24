@@ -3,47 +3,72 @@ package byzcoin
 import (
 	"context"
 	"errors"
+	"log"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/blockchain/skipchain"
+	"go.dedis.ch/phoenix/globalstate/mem"
 	"go.dedis.ch/phoenix/ledger"
+	"go.dedis.ch/phoenix/onet"
+	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/types"
 )
 
-//go:generate protoc -I ../../ -I ./ --go_out=./ ./messages.proto
-
-type State struct {
-	proof blockchain.Proof
-	value []byte
+// Byzcoin is a ledger implementation.
+type Byzcoin struct {
+	roster    blockchain.Roster
+	bc        blockchain.Blockchain
+	validator validator
+	factory   factory
 }
 
-func (s State) Verify() error {
-	return s.proof.Verify()
-}
+// NewByzcoin creates a new byzcoin.
+func NewByzcoin(o onet.Onet, ro blockchain.Roster, executor scm.Executor) *Byzcoin {
+	store := mem.NewStore()
+	validator := newValidator(store, executor)
 
-func (s State) Value() []byte {
-	return s.value
-}
-
-func (s State) Pack() proto.Message {
-	return &StateMessage{
-		Proof: s.proof.Pack().(*skipchain.ProofMessage),
-		Value: s.value,
+	return &Byzcoin{
+		roster:    ro,
+		validator: validator,
+		bc:        skipchain.NewSkipchain(o, validator),
 	}
 }
 
-type Byzcoin struct {
-	roster blockchain.Roster
-	bc     blockchain.Blockchain
+// GetTransactionFactory returns the factory.
+func (b *Byzcoin) GetTransactionFactory() ledger.TransactionFactory {
+	return b.factory
 }
 
-func (b *Byzcoin) AddTransaction(in proto.Message) error {
-	tx, ok := in.(*Transaction)
+// AddTransaction adds a transaction to the ledger.
+func (b *Byzcoin) AddTransaction(in ledger.Transaction) error {
+	tx, ok := in.(Transaction)
 	if !ok {
 		return errors.New("wrong type of transaction")
 	}
 
-	err := b.bc.Store(b.roster, tx)
+	instances, err := b.validator.execute(tx)
+	if err != nil {
+		return err
+	}
+
+	instanceIDs := make([][]byte, len(instances))
+	for i, inst := range instances {
+		instanceIDs[i] = inst.GetKey()
+	}
+
+	ptx, err := tx.Pack()
+	if err != nil {
+		return err
+	}
+
+	// The validator will take care of updating the global state and verifying
+	// the access control.
+	err = b.bc.Store(b.roster, &types.TransactionResult{
+		Transaction: ptx.(*types.Transaction),
+		Accepted:    true,
+		Instances:   instanceIDs,
+	})
 	if err != nil {
 		return err
 	}
@@ -51,28 +76,28 @@ func (b *Byzcoin) AddTransaction(in proto.Message) error {
 	return nil
 }
 
-func (b *Byzcoin) GetState(key string) (ledger.State, error) {
-	proof, err := b.bc.GetProof()
-	if err != nil {
-		return nil, err
-	}
-
-	state := State{
-		proof: proof,
-		value: []byte{},
-	}
-
-	return state, nil
+type observer struct {
+	ch chan *types.TransactionResult
 }
-
-type observer struct{}
 
 func (o observer) NotifyCallback(event interface{}) {
+	evt := event.(*types.Event)
 
+	var txr types.TransactionResult
+	err := ptypes.UnmarshalAny(evt.Block.GetData(), &txr)
+
+	if err == nil {
+		log.Printf("Block [%d] added to the chain", evt.GetBlock().GetIndex())
+		o.ch <- &txr
+	} else {
+		log.Printf("Error: %v", err)
+	}
 }
 
-func (b *Byzcoin) Watch(ctx context.Context) <-chan ledger.TransactionResult {
-	c := make(chan ledger.TransactionResult)
-	b.bc.Watch(context.Background(), observer{})
+// Watch observes the ledger and notifies the new transactions.
+func (b *Byzcoin) Watch(ctx context.Context) <-chan *types.TransactionResult {
+	c := make(chan *types.TransactionResult, 100)
+	b.bc.Watch(ctx, observer{ch: c})
+
 	return c
 }

@@ -7,20 +7,19 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"go.dedis.ch/kyber/v3/pairing"
+	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/blockchain/skipchain/cosi"
 	"go.dedis.ch/phoenix/onet"
-	"go.dedis.ch/phoenix/onet/local"
 	"go.dedis.ch/phoenix/types"
 	"go.dedis.ch/phoenix/utils"
 )
 
-//go:generate protoc -I ./ --go_out=./ ./types.proto
-
 // Block is the representation of the data structures that will be linked
 // together.
 type Block struct {
-	Index     int64
+	Index     uint64
 	Roster    blockchain.Roster
 	Signature cosi.Signature
 	Data      proto.Message
@@ -46,22 +45,24 @@ func (b Block) hash() ([]byte, error) {
 func (b Block) Pack() proto.Message {
 	any, _ := ptypes.MarshalAny(b.Data)
 
-	return &BlockMessage{
+	return &types.Block{
 		Index: b.Index,
 		Data:  any,
 	}
 }
 
-// PayloadValidator is the validator provided by the user of the skipchain module.
-type PayloadValidator func(b Block) error
+// Validator is the validator provided by the user of the skipchain module.
+type Validator interface {
+	Validate(b Block) error
+}
 
 type blockValidator struct {
 	db Database
-	pv PayloadValidator
+	v  Validator
 }
 
 func (b blockValidator) Validate(msg proto.Message) ([]byte, error) {
-	bm, ok := msg.(*BlockMessage)
+	bm, ok := msg.(*types.Block)
 	if !ok {
 		return nil, errors.New("unknown type of message")
 	}
@@ -77,7 +78,7 @@ func (b blockValidator) Validate(msg proto.Message) ([]byte, error) {
 		Data:  da.Message,
 	}
 
-	err = b.pv(block)
+	err = b.v.Validate(block)
 	if err != nil {
 		return nil, err
 	}
@@ -104,14 +105,14 @@ type Skipchain struct {
 }
 
 // NewSkipchain creates a new skipchain-powered blockchain.
-func NewSkipchain(addr *types.Address, v PayloadValidator) *Skipchain {
+func NewSkipchain(o onet.Onet, v Validator) *Skipchain {
 	db := NewInMemoryDatabase()
-	onet := local.NewLocalOnet(addr)
+	kp := key.NewKeyPair(pairing.NewSuiteBn256())
 
 	return &Skipchain{
 		db:      db,
-		onet:    onet,
-		cosi:    cosi.NewBlsCoSi(onet, blockValidator{db: db, pv: v}),
+		onet:    o,
+		cosi:    cosi.NewBlsCoSi(o, kp, blockValidator{db: db, v: v}),
 		watcher: utils.NewWatcher(),
 	}
 }
@@ -141,7 +142,7 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 		return err
 	}
 
-	s.watcher.Notify(blockchain.Event{})
+	go s.watcher.Notify(&types.Event{Block: block.Pack().(*types.Block)})
 
 	return nil
 }

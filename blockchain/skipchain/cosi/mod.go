@@ -6,6 +6,7 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/sign/bls"
+	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/onet"
 )
@@ -40,9 +41,9 @@ type BlsCoSi struct {
 }
 
 // NewBlsCoSi returns a new collective signing instance.
-func NewBlsCoSi(o onet.Onet, v Validator) *BlsCoSi {
+func NewBlsCoSi(o onet.Onet, kp *key.Pair, v Validator) *BlsCoSi {
 	return &BlsCoSi{
-		rpc: o.MakeRPC("cosi", newHandler(o, v)),
+		rpc: o.MakeRPC("cosi", newHandler(o, kp, v)),
 	}
 }
 

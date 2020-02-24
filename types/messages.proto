@@ -14,6 +14,51 @@ message Envelope {
     google.protobuf.Any message = 3;
 }
 
+message Block {
+    uint64 index = 1;
+    google.protobuf.Any data = 2;
+}
+
+message Proof {
+    Block block = 1;
+}
+
+message Event {
+    Block block = 1;
+}
+
+message Transaction {
+    string contractID = 1;
+    string action = 2;
+    google.protobuf.Any body = 3;
+}
+
+message TransactionResult {
+    Transaction transaction = 1;
+    bool accepted = 2;
+    repeated bytes instances = 3;
+}
+
+message Instance {
+    bytes key = 1;
+    google.protobuf.Any value = 2;
+    bytes accessControl = 3;
+}
+
+message CalypsoWrite {
+    bytes data = 1;
+    bytes u = 2;
+    bytes ubar = 3;
+    bytes e = 4;
+    bytes f = 5;
+    bytes c = 6;
+}
+
+message CalypsoRead {
+    bytes writeID = 1;
+    bytes xc = 2;
+}
+
 message DKGInit {
     repeated Address addresses = 1;
 }

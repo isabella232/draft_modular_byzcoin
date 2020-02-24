@@ -3,6 +3,7 @@ package skipchain
 import (
 	proto "github.com/golang/protobuf/proto"
 	"go.dedis.ch/phoenix/blockchain/skipchain/cosi"
+	"go.dedis.ch/phoenix/types"
 )
 
 // Proof is a data structure that contains the shortest chain to a block
@@ -42,7 +43,7 @@ func (p Proof) Verify() error {
 
 // Pack creates a proof message that can be sent over the network.
 func (p Proof) Pack() proto.Message {
-	return &ProofMessage{
-		Block: p.block.Pack().(*BlockMessage),
+	return &types.Proof{
+		Block: p.block.Pack().(*types.Block),
 	}
 }

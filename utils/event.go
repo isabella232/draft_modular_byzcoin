@@ -36,6 +36,9 @@ func (w *Watcher) Remove(observer Observer) {
 }
 
 func (w *Watcher) Notify(event interface{}) {
+	w.Lock()
+	defer w.Unlock()
+
 	for w := range w.observers {
 		w.NotifyCallback(event)
 	}
