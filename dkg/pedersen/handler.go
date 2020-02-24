@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
+	"go.dedis.ch/phoenix/dkg"
 	"go.dedis.ch/phoenix/onet"
-	"go.dedis.ch/phoenix/types"
 
 	"go.dedis.ch/kyber/v3"
 	dkgpedersen "go.dedis.ch/kyber/v3/share/dkg/pedersen"
@@ -41,20 +41,20 @@ func (h handler) Stream(sender onet.Sender, receiver onet.Receiver) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	init, ok := req.(*types.DKGInit)
+	init, ok := req.(*dkg.Init)
 	if !ok {
 		return errors.New("expect init message")
 	}
 
 	log.Println("DKG Pedersen init")
 
-	dkg, err := dkgpedersen.NewDistKeyGenerator(Suite, h.kp.Private, h.publicKeys, len(h.publicKeys))
+	dkgp, err := dkgpedersen.NewDistKeyGenerator(Suite, h.kp.Private, h.publicKeys, len(h.publicKeys))
 	if err != nil {
 		return err
 	}
 
 	proc := &processor{
-		dkg:    dkg,
+		dkg:    dkgp,
 		sender: sender,
 	}
 
@@ -63,16 +63,16 @@ func (h handler) Stream(sender onet.Sender, receiver onet.Receiver) error {
 		return err
 	}
 
-	for !dkg.Certified() {
+	for !dkgp.Certified() {
 		_, req, err := receiver.Recv(ctx)
 		if err != nil {
 			return err
 		}
 
 		switch msg := req.(type) {
-		case *types.DKGDeal:
+		case *dkg.Deal:
 			err = proc.processDeal(init, msg)
-		case *types.DKGResponse:
+		case *dkg.Ack:
 			err = proc.processResponse(msg)
 		}
 
@@ -81,7 +81,7 @@ func (h handler) Stream(sender onet.Sender, receiver onet.Receiver) error {
 		}
 	}
 
-	share, err := dkg.DistKeyShare()
+	share, err := dkgp.DistKeyShare()
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (h handler) Stream(sender onet.Sender, receiver onet.Receiver) error {
 		return err
 	}
 
-	sender.Send(&types.DKGDone{PublicKey: buffer}, from)
+	sender.Send(&dkg.Done{PublicKey: buffer}, from)
 
 	return nil
 }
@@ -101,16 +101,16 @@ type processor struct {
 	sender onet.Sender
 }
 
-func (p *processor) sendDeals(init *types.DKGInit) error {
+func (p *processor) sendDeals(init *dkg.Init) error {
 	deals, err := p.dkg.Deals()
 	if err != nil {
 		return err
 	}
 
 	for i, deal := range deals {
-		msg := &types.DKGDeal{
+		msg := &dkg.Deal{
 			Index: deal.Index,
-			Deal: &types.EncryptedDeal{
+			Deal: &dkg.EncryptedDeal{
 				DHKey:     deal.Deal.DHKey,
 				Signature: deal.Deal.Signature,
 				Nonce:     deal.Deal.Nonce,
@@ -128,7 +128,7 @@ func (p *processor) sendDeals(init *types.DKGInit) error {
 	return nil
 }
 
-func (p *processor) processDeal(init *types.DKGInit, msg *types.DKGDeal) error {
+func (p *processor) processDeal(init *dkg.Init, msg *dkg.Deal) error {
 	deal := &dkgpedersen.Deal{
 		Index: msg.GetIndex(),
 		Deal: &vss.EncryptedDeal{
@@ -145,9 +145,9 @@ func (p *processor) processDeal(init *types.DKGInit, msg *types.DKGDeal) error {
 		return err
 	}
 
-	respm := &types.DKGResponse{
+	respm := &dkg.Ack{
 		Index: resp.Index,
-		Response: &types.DKGResponse_Response{
+		Response: &dkg.Ack_Response{
 			SessionID: resp.Response.SessionID,
 			Index:     resp.Response.Index,
 			Signature: resp.Response.Signature,
@@ -163,7 +163,7 @@ func (p *processor) processDeal(init *types.DKGInit, msg *types.DKGDeal) error {
 	return nil
 }
 
-func (p *processor) processResponse(msg *types.DKGResponse) error {
+func (p *processor) processResponse(msg *dkg.Ack) error {
 	resp := &dkgpedersen.Response{
 		Index: msg.Index,
 		Response: &vss.Response{

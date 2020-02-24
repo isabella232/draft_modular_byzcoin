@@ -7,7 +7,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"go.dedis.ch/phoenix/globalstate"
 	"go.dedis.ch/phoenix/scm"
-	"go.dedis.ch/phoenix/types"
 )
 
 const (
@@ -35,8 +34,8 @@ func (sc SmartContract) Get(s globalstate.Snapshot, in proto.Message) (proto.Mes
 }
 
 // Post creates the write and read instances.
-func (sc SmartContract) Post(s globalstate.Snapshot, action scm.Action, in proto.Message) ([]*types.Instance, error) {
-	instances := []*types.Instance{}
+func (sc SmartContract) Post(s globalstate.Snapshot, action scm.Action, in proto.Message) ([]*globalstate.Instance, error) {
+	instances := []*globalstate.Instance{}
 
 	switch action {
 	case ActionWrite:
@@ -46,7 +45,7 @@ func (sc SmartContract) Post(s globalstate.Snapshot, action scm.Action, in proto
 			return nil, err
 		}
 
-		instances = append(instances, &types.Instance{Key: []byte{1}, Value: write})
+		instances = append(instances, &globalstate.Instance{Key: []byte{1}, Value: write})
 	case ActionRead:
 		// do read
 	default:

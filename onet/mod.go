@@ -8,29 +8,30 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"go.dedis.ch/phoenix/types"
 )
+
+//go:generate protoc -I ./ --go_out=./ ./messages.proto
 
 // Sender is an interface to provide primitives to send messages to recipients.
 type Sender interface {
-	Send(msg proto.Message, addrs ...*types.Address) error
+	Send(msg proto.Message, addrs ...*Address) error
 }
 
 // Receiver is an interface to provide primitives to receive messages from
 // recipients.
 type Receiver interface {
-	Recv(context.Context) (*types.Address, proto.Message, error)
+	Recv(context.Context) (*Address, proto.Message, error)
 }
 
 // RPC is a representation of a remote procedure call that can call a single
 // distant procedure or multiple.
 type RPC interface {
 	// Call is a basic request to one or multiple distant peers.
-	Call(req proto.Message, addrs ...*types.Address) (<-chan proto.Message, error)
+	Call(req proto.Message, addrs ...*Address) (<-chan proto.Message, error)
 
 	// Stream is a persistent request that will be closed only when the
 	// orchestrator is done or an error occured.
-	Stream(ctx context.Context, addrs ...*types.Address) (in Sender, out Receiver)
+	Stream(ctx context.Context, addrs ...*Address) (in Sender, out Receiver)
 }
 
 // Handler is the interface to implement to create a public endpoint.
@@ -70,7 +71,7 @@ func (h DefaultHandler) Stream(in Sender, out Receiver) error {
 // Onet is a representation of a overlay network that allows the creation
 // of namespaces for internal protocols and associate handlers to it.
 type Onet interface {
-	Address() *types.Address
+	Address() *Address
 	MakeNamespace(ns string) Onet
 	MakeRPC(name string, h Handler) RPC
 }

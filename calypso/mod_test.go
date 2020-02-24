@@ -9,7 +9,6 @@ import (
 	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/onet/local"
-	"go.dedis.ch/phoenix/types"
 )
 
 func TestCalypso_Basic(t *testing.T) {
@@ -28,9 +27,9 @@ func TestCalypso_Basic(t *testing.T) {
 	require.Equal(t, "access control denied: forbidden to update", err.Error())
 }
 
-func makeRoster(n int) ([]onet.Onet, []*types.Address, []*key.Pair, []kyber.Point) {
+func makeRoster(n int) ([]onet.Onet, []*onet.Address, []*key.Pair, []kyber.Point) {
 	onets := make([]onet.Onet, n)
-	addrs := make([]*types.Address, n)
+	addrs := make([]*onet.Address, n)
 	kps := make([]*key.Pair, n)
 	pubkeys := make([]kyber.Point, n)
 

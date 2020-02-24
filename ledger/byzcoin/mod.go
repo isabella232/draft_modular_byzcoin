@@ -12,7 +12,6 @@ import (
 	"go.dedis.ch/phoenix/ledger"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/scm"
-	"go.dedis.ch/phoenix/types"
 )
 
 // Byzcoin is a ledger implementation.
@@ -64,8 +63,8 @@ func (b *Byzcoin) AddTransaction(in ledger.Transaction) error {
 
 	// The validator will take care of updating the global state and verifying
 	// the access control.
-	err = b.bc.Store(b.roster, &types.TransactionResult{
-		Transaction: ptx.(*types.Transaction),
+	err = b.bc.Store(b.roster, &ledger.TransactionResult{
+		Transaction: ptx.(*ledger.TransactionInput),
 		Accepted:    true,
 		Instances:   instanceIDs,
 	})
@@ -77,13 +76,13 @@ func (b *Byzcoin) AddTransaction(in ledger.Transaction) error {
 }
 
 type observer struct {
-	ch chan *types.TransactionResult
+	ch chan *ledger.TransactionResult
 }
 
 func (o observer) NotifyCallback(event interface{}) {
-	evt := event.(*types.Event)
+	evt := event.(*blockchain.Event)
 
-	var txr types.TransactionResult
+	var txr ledger.TransactionResult
 	err := ptypes.UnmarshalAny(evt.Block.GetData(), &txr)
 
 	if err == nil {
@@ -95,8 +94,8 @@ func (o observer) NotifyCallback(event interface{}) {
 }
 
 // Watch observes the ledger and notifies the new transactions.
-func (b *Byzcoin) Watch(ctx context.Context) <-chan *types.TransactionResult {
-	c := make(chan *types.TransactionResult, 100)
+func (b *Byzcoin) Watch(ctx context.Context) <-chan *ledger.TransactionResult {
+	c := make(chan *ledger.TransactionResult, 100)
 	b.bc.Watch(ctx, observer{ch: c})
 
 	return c

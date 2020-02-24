@@ -5,16 +5,15 @@ import (
 	"sync"
 
 	"go.dedis.ch/phoenix/globalstate"
-	"go.dedis.ch/phoenix/types"
 )
 
 // Key is the type of the instance keys.
 type Key [32]byte
 
 // InMemorySnapshot is an immutable state of the store.
-type InMemorySnapshot map[Key]*types.Instance
+type InMemorySnapshot map[Key]*globalstate.Instance
 
-func (s InMemorySnapshot) Read(key []byte) (*types.Instance, error) {
+func (s InMemorySnapshot) Read(key []byte) (*globalstate.Instance, error) {
 	k := Key{}
 	copy(k[:], key)
 
@@ -27,11 +26,11 @@ type io struct {
 	snapshot InMemorySnapshot
 }
 
-func (u io) Read(key []byte) (*types.Instance, error) {
+func (u io) Read(key []byte) (*globalstate.Instance, error) {
 	return u.snapshot.Read(key)
 }
 
-func (u io) Write(instance *types.Instance) error {
+func (u io) Write(instance *globalstate.Instance) error {
 	k := Key{}
 	copy(k[:], instance.GetKey())
 

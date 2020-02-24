@@ -14,8 +14,9 @@ import (
 	"go.dedis.ch/phoenix/ledger/byzcoin"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/scm/ssc"
-	"go.dedis.ch/phoenix/types"
 )
+
+//go:generate protoc -I ./ --go_out=./ ./messages.proto
 
 // Suite is the cryptographic suite of the package.
 var Suite = suites.MustFind("Ed25519")
@@ -50,7 +51,7 @@ func NewCalypso(o onet.Onet, ro blockchain.Roster, kp *key.Pair, pubkeys []kyber
 
 // AddWrite creates a write instance.
 func (c *Calypso) AddWrite() error {
-	tx, err := c.ledger.GetTransactionFactory().Create(ContractID, ActionWrite, &types.CalypsoWrite{})
+	tx, err := c.ledger.GetTransactionFactory().Create(ContractID, ActionWrite, &Write{})
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package ledger;
+
+import "google/protobuf/any.proto";
+
+message TransactionInput {
+    string contractID = 1;
+    string action = 2;
+    google.protobuf.Any body = 3;
+}
+
+message TransactionResult {
+    TransactionInput transaction = 1;
+    bool accepted = 2;
+    repeated bytes instances = 3;
+}

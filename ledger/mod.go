@@ -5,8 +5,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"go.dedis.ch/phoenix/scm"
-	"go.dedis.ch/phoenix/types"
 )
+
+//go:generate protoc -I ./ --go_out=./ ./messages.proto
 
 // Transaction is a set of instructions to be applied to the global state
 // one after another.
@@ -30,5 +31,5 @@ type Ledger interface {
 	AddTransaction(tx Transaction) error
 
 	// Watch notifies the channel for every new transaction.
-	Watch(ctx context.Context) <-chan *types.TransactionResult
+	Watch(ctx context.Context) <-chan *TransactionResult
 }

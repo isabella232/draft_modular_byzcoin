@@ -9,7 +9,6 @@ import (
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/onet/local"
-	"go.dedis.ch/phoenix/types"
 )
 
 type testValidator struct{}
@@ -42,9 +41,9 @@ func TestSkipchain_SimpleScenario(t *testing.T) {
 	require.NoError(t, proof.Verify())
 }
 
-func makeRoster(n int) ([]onet.Onet, []*types.Address) {
+func makeRoster(n int) ([]onet.Onet, []*onet.Address) {
 	onets := make([]onet.Onet, n)
-	addrs := make([]*types.Address, n)
+	addrs := make([]*onet.Address, n)
 
 	for i := 0; i < n; i++ {
 		addrs[i] = local.NewAddress(fmt.Sprintf("node%d", i))

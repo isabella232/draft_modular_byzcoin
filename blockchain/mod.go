@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
-	"go.dedis.ch/phoenix/types"
+	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/utils"
 )
 
+//go:generate protoc -I ./ --go_out=./ ./messages.proto
+
 // Roster is a set of addresses.
-type Roster []*types.Address
+type Roster []*onet.Address
 
 // Proof is the interface that provides the primitives to verify that a
 // block is valid w.r.t. the genesis block.

@@ -12,7 +12,6 @@ import (
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/blockchain/skipchain/cosi"
 	"go.dedis.ch/phoenix/onet"
-	"go.dedis.ch/phoenix/types"
 	"go.dedis.ch/phoenix/utils"
 )
 
@@ -45,7 +44,7 @@ func (b Block) hash() ([]byte, error) {
 func (b Block) Pack() proto.Message {
 	any, _ := ptypes.MarshalAny(b.Data)
 
-	return &types.Block{
+	return &blockchain.Block{
 		Index: b.Index,
 		Data:  any,
 	}
@@ -62,7 +61,7 @@ type blockValidator struct {
 }
 
 func (b blockValidator) Validate(msg proto.Message) ([]byte, error) {
-	bm, ok := msg.(*types.Block)
+	bm, ok := msg.(*blockchain.Block)
 	if !ok {
 		return nil, errors.New("unknown type of message")
 	}
@@ -142,7 +141,7 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 		return err
 	}
 
-	go s.watcher.Notify(&types.Event{Block: block.Pack().(*types.Block)})
+	go s.watcher.Notify(&blockchain.Event{Block: block.Pack().(*blockchain.Block)})
 
 	return nil
 }

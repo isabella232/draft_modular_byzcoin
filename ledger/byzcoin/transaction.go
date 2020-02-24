@@ -5,7 +5,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"go.dedis.ch/phoenix/ledger"
 	"go.dedis.ch/phoenix/scm"
-	"go.dedis.ch/phoenix/types"
 )
 
 // Transaction is the data structure for a transaction specific to Byzcoin.
@@ -17,7 +16,7 @@ type Transaction struct {
 
 // FromProto returns a transaction from a protobuf message.
 func FromProto(msg proto.Message) (Transaction, error) {
-	tx := msg.(*types.Transaction)
+	tx := msg.(*ledger.TransactionInput)
 
 	var da ptypes.DynamicAny
 	err := ptypes.UnmarshalAny(tx.GetBody(), &da)
@@ -39,7 +38,7 @@ func (t Transaction) Pack() (proto.Message, error) {
 		return nil, err
 	}
 
-	return &types.Transaction{
+	return &ledger.TransactionInput{
 		ContractID: string(t.ContractID),
 		Action:     string(t.Action),
 		Body:       body,

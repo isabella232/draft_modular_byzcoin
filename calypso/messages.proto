@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package calypso;
+
+message Write {
+    bytes data = 1;
+    bytes u = 2;
+    bytes ubar = 3;
+    bytes e = 4;
+    bytes f = 5;
+    bytes c = 6;
+}
+
+message Read {
+    bytes writeID = 1;
+    bytes xc = 2;
+}

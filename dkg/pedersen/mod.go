@@ -6,8 +6,8 @@ import (
 
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/util/key"
+	"go.dedis.ch/phoenix/dkg"
 	"go.dedis.ch/phoenix/onet"
-	"go.dedis.ch/phoenix/types"
 )
 
 // DKG is the implementation of the Pedersen DKG algorithm.
@@ -26,13 +26,13 @@ func New(o onet.Onet, kp *key.Pair, publicKeys []kyber.Point) *DKG {
 
 // Create starts a new distributed key generation. Each participant will store
 // its own share and the caller can only orchestrate without participating.
-func (p *DKG) Create(roster []*types.Address) (kyber.Point, error) {
+func (p *DKG) Create(roster []*onet.Address) (kyber.Point, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	sender, out := p.rpc.Stream(ctx, roster...)
 
-	err := sender.Send(&types.DKGInit{Addresses: roster}, roster...)
+	err := sender.Send(&dkg.Init{Addresses: roster}, roster...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (p *DKG) Create(roster []*types.Address) (kyber.Point, error) {
 			return nil, err
 		}
 
-		resp := msg.(*types.DKGDone)
+		resp := msg.(*dkg.Done)
 		log.Printf("Public Key: %x\n", resp.GetPublicKey())
 
 		publicKey = Suite.Point()

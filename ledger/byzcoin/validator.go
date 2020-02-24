@@ -7,8 +7,8 @@ import (
 	"go.dedis.ch/phoenix/ac/naive"
 	"go.dedis.ch/phoenix/blockchain/skipchain"
 	"go.dedis.ch/phoenix/globalstate"
+	"go.dedis.ch/phoenix/ledger"
 	"go.dedis.ch/phoenix/scm"
-	"go.dedis.ch/phoenix/types"
 )
 
 type validator struct {
@@ -25,7 +25,7 @@ func newValidator(store globalstate.Store, exec scm.Executor) validator {
 	}
 }
 
-func (v validator) execute(tx Transaction) ([]*types.Instance, error) {
+func (v validator) execute(tx Transaction) ([]*globalstate.Instance, error) {
 	snapshot, err := v.store.GetCurrent()
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (v validator) execute(tx Transaction) ([]*types.Instance, error) {
 }
 
 func (v validator) Validate(block skipchain.Block) error {
-	res := block.Data.(*types.TransactionResult)
+	res := block.Data.(*ledger.TransactionResult)
 
 	tx, err := FromProto(res.GetTransaction())
 	if err != nil {

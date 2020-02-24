@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package onet;
+
+import "google/protobuf/any.proto";
+
+message Address {
+    string id = 1;
+}
+
+message Envelope {
+    Address from = 1;
+    repeated Address to = 2;
+    google.protobuf.Any message = 3;
+}

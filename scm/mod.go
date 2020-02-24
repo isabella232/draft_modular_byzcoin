@@ -3,7 +3,6 @@ package scm
 import (
 	"github.com/golang/protobuf/proto"
 	"go.dedis.ch/phoenix/globalstate"
-	"go.dedis.ch/phoenix/types"
 )
 
 // ID is a unique identifier for a smart contract.
@@ -15,5 +14,5 @@ type Action string
 // Executor provides the primitives to interact with smart contracts.
 type Executor interface {
 	Request(snapshot globalstate.Snapshot, id ID, in proto.Message) (proto.Message, error)
-	Execute(snapshot globalstate.Snapshot, id ID, action Action, in proto.Message) ([]*types.Instance, error)
+	Execute(snapshot globalstate.Snapshot, id ID, action Action, in proto.Message) ([]*globalstate.Instance, error)
 }

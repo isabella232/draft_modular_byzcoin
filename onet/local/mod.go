@@ -9,7 +9,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/phoenix/onet"
-	"go.dedis.ch/phoenix/types"
 )
 
 var suite = pairing.NewSuiteBn256()
@@ -23,25 +22,25 @@ var manager = localManager{
 }
 
 // NewAddress creates an address compatible with local onet.
-func NewAddress(id string) *types.Address {
-	return &types.Address{
+func NewAddress(id string) *onet.Address {
+	return &onet.Address{
 		Id: id,
 	}
 }
 
 type sender struct {
-	addr *types.Address
-	in   chan *types.Envelope
+	addr *onet.Address
+	in   chan *onet.Envelope
 }
 
-func (s sender) Send(msg proto.Message, addrs ...*types.Address) error {
+func (s sender) Send(msg proto.Message, addrs ...*onet.Address) error {
 	a, err := ptypes.MarshalAny(msg)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		s.in <- &types.Envelope{
+		s.in <- &onet.Envelope{
 			From:    s.addr,
 			To:      addrs,
 			Message: a,
@@ -52,11 +51,11 @@ func (s sender) Send(msg proto.Message, addrs ...*types.Address) error {
 }
 
 type receiver struct {
-	out  chan *types.Envelope
+	out  chan *onet.Envelope
 	errs chan error
 }
 
-func (r receiver) Recv(ctx context.Context) (*types.Address, proto.Message, error) {
+func (r receiver) Recv(ctx context.Context) (*onet.Address, proto.Message, error) {
 	select {
 	case env := <-r.out:
 		var da ptypes.DynamicAny
@@ -81,7 +80,7 @@ type RPC struct {
 }
 
 // Call sends the message to all participants and gather their reply.
-func (rpc *RPC) Call(req proto.Message, addrs ...*types.Address) (<-chan proto.Message, error) {
+func (rpc *RPC) Call(req proto.Message, addrs ...*onet.Address) (<-chan proto.Message, error) {
 	out := make(chan proto.Message, 1)
 
 	go func() {
@@ -105,15 +104,15 @@ func (rpc *RPC) Call(req proto.Message, addrs ...*types.Address) (<-chan proto.M
 
 // Stream opens a stream. The caller is responsible for cancelling the context
 // to close the stream.
-func (rpc *RPC) Stream(ctx context.Context, addrs ...*types.Address) (onet.Sender, onet.Receiver) {
-	in := make(chan *types.Envelope)
-	out := make(chan *types.Envelope, 1)
+func (rpc *RPC) Stream(ctx context.Context, addrs ...*onet.Address) (onet.Sender, onet.Receiver) {
+	in := make(chan *onet.Envelope)
+	out := make(chan *onet.Envelope, 1)
 	errs := make(chan error, 1)
 
 	outs := make(map[string]receiver)
 
 	for _, addr := range addrs {
-		c := make(chan *types.Envelope, 1)
+		c := make(chan *onet.Envelope, 1)
 		outs[addr.GetId()] = receiver{out: c}
 
 		peer := manager.instances[addr.GetId()]
@@ -131,7 +130,7 @@ func (rpc *RPC) Stream(ctx context.Context, addrs ...*types.Address) (onet.Sende
 		}(outs[addr.GetId()])
 	}
 
-	orchSender := sender{addr: &types.Address{}, in: in}
+	orchSender := sender{addr: &onet.Address{}, in: in}
 	orchRecv := receiver{out: out, errs: errs}
 
 	go func() {
@@ -162,13 +161,13 @@ func (rpc *RPC) Stream(ctx context.Context, addrs ...*types.Address) (onet.Sende
 
 // Onet provides helpers to create handlers.
 type Onet struct {
-	addr *types.Address
+	addr *onet.Address
 	path string
 	rpcs map[string]*RPC
 }
 
 // NewLocalOnet creates a new onet instance.
-func NewLocalOnet(addr *types.Address) *Onet {
+func NewLocalOnet(addr *onet.Address) *Onet {
 	o := &Onet{
 		addr: addr,
 		path: "",
@@ -179,7 +178,7 @@ func NewLocalOnet(addr *types.Address) *Onet {
 }
 
 // Address returns the address.
-func (o *Onet) Address() *types.Address {
+func (o *Onet) Address() *onet.Address {
 	return o.addr
 }
 
