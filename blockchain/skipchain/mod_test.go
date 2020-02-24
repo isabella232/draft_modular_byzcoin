@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/require"
+	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/onet/local"
@@ -22,8 +23,10 @@ func TestSkipchain_SimpleScenario(t *testing.T) {
 
 	ro := blockchain.Roster(addrs)
 	sc1 := NewSkipchain(onets[0], testValidator{})
-	NewSkipchain(onets[1], testValidator{})
-	NewSkipchain(onets[2], testValidator{})
+	sc2 := NewSkipchain(onets[1], testValidator{})
+	sc3 := NewSkipchain(onets[2], testValidator{})
+
+	pubkeys := []kyber.Point{sc1.PublicKey(), sc2.PublicKey(), sc3.PublicKey()}
 
 	ts := ptypes.TimestampNow()
 
@@ -36,9 +39,9 @@ func TestSkipchain_SimpleScenario(t *testing.T) {
 	err = sc1.Store(ro, ts)
 	require.NoError(t, err)
 
-	proof, err := sc1.GetProof()
+	proof, err := sc1.GetVerifiableBlock()
 	require.NoError(t, err)
-	require.NoError(t, proof.Verify())
+	require.NoError(t, proof.Verify(pubkeys))
 }
 
 func makeRoster(n int) ([]onet.Onet, []*onet.Address) {

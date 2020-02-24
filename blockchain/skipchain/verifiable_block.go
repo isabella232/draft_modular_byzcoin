@@ -2,38 +2,39 @@ package skipchain
 
 import (
 	proto "github.com/golang/protobuf/proto"
+	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/blockchain/skipchain/cosi"
 )
 
-// Proof is a data structure that contains the shortest chain to a block
+// VerifiableBlock is a data structure that contains the shortest chain to a block
 // and the integrity can be verified.
-type Proof struct {
+type VerifiableBlock struct {
 	verifier cosi.Verifier
 	block    Block
 }
 
-// NewProof creates a new proof.
-func NewProof(block Block, v cosi.Verifier) Proof {
-	return Proof{
+// NewVerifiableBlock creates a new proof.
+func NewVerifiableBlock(block Block, v cosi.Verifier) VerifiableBlock {
+	return VerifiableBlock{
 		verifier: v,
 		block:    block,
 	}
 }
 
 // Payload returns the data of block.
-func (p Proof) Payload() proto.Message {
+func (p VerifiableBlock) Payload() proto.Message {
 	return p.block.Data
 }
 
 // Verify insures the integrity of the proof.
-func (p Proof) Verify() error {
+func (p VerifiableBlock) Verify(publicKeys []kyber.Point) error {
 	hash, err := p.block.hash()
 	if err != nil {
 		return err
 	}
 
-	err = p.verifier(nil, hash, p.block.Signature)
+	err = p.verifier(publicKeys, hash, p.block.Signature)
 	if err != nil {
 		return err
 	}
@@ -42,8 +43,8 @@ func (p Proof) Verify() error {
 }
 
 // Pack creates a proof message that can be sent over the network.
-func (p Proof) Pack() proto.Message {
-	return &blockchain.VerifiableBlock{
+func (p VerifiableBlock) Pack() proto.Message {
+	return &blockchain.Chain{
 		Block: p.block.Pack().(*blockchain.Block),
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
+	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/utils"
 )
@@ -13,15 +14,15 @@ import (
 // Roster is a set of addresses.
 type Roster []*onet.Address
 
-// Proof is the interface that provides the primitives to verify that a
+// VerifiableBlock is the interface that provides the primitives to verify that a
 // block is valid w.r.t. the genesis block.
-type Proof interface {
+type VerifiableBlock interface {
 	// Payload returns the data of the latest block.
 	Payload() proto.Message
 
 	// Verify makes sure that the integrity of the block from the genesis block
 	// is correct.
-	Verify() error
+	Verify(publicKeys []kyber.Point) error
 
 	Pack() proto.Message
 }
@@ -33,8 +34,8 @@ type Blockchain interface {
 	// The implementation is responsible for any validations required.
 	Store(ro Roster, data proto.Message) error
 
-	// GetProof returns a valid proof of the latest block.
-	GetProof() (Proof, error)
+	// GetVerifiableBlock returns a valid proof of the latest block.
+	GetVerifiableBlock() (VerifiableBlock, error)
 
 	// Watch takes an observer that will be notified for each new block
 	// definitely appended to the chain.

@@ -7,6 +7,7 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/blockchain"
@@ -97,6 +98,7 @@ func (b blockValidator) Validate(msg proto.Message) ([]byte, error) {
 // Skipchain is an implementation of the Blockchain interface that is using
 // collective signing to create links between the blocks.
 type Skipchain struct {
+	kp      *key.Pair
 	db      Database
 	onet    onet.Onet
 	cosi    cosi.CollectiveSigning
@@ -109,11 +111,17 @@ func NewSkipchain(o onet.Onet, v Validator) *Skipchain {
 	kp := key.NewKeyPair(pairing.NewSuiteBn256())
 
 	return &Skipchain{
+		kp:      kp,
 		db:      db,
 		onet:    o,
 		cosi:    cosi.NewBlsCoSi(o, kp, blockValidator{db: db, v: v}),
 		watcher: utils.NewWatcher(),
 	}
+}
+
+// PublicKey returns the cosi public key.
+func (s *Skipchain) PublicKey() kyber.Point {
+	return s.kp.Public
 }
 
 // Store creates a new block with the data as the payload.
@@ -146,15 +154,15 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 	return nil
 }
 
-// GetProof reads the latest block of the chain and creates a verifiable proof
+// GetVerifiableBlock reads the latest block of the chain and creates a verifiable proof
 // of the shortest chain from the genesis to the block.
-func (s *Skipchain) GetProof() (blockchain.Proof, error) {
+func (s *Skipchain) GetVerifiableBlock() (blockchain.VerifiableBlock, error) {
 	block, err := s.db.ReadLast()
 	if err != nil {
 		return nil, err
 	}
 
-	return NewProof(block, s.cosi.MakeVerifier()), nil
+	return NewVerifiableBlock(block, s.cosi.MakeVerifier()), nil
 }
 
 // Watch registers the observer so that it will be notified of new blocks.

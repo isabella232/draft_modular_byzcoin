@@ -9,7 +9,7 @@ message Block {
     google.protobuf.Any data = 2;
 }
 
-message VerifiableBlock {
+message Chain {
     Block block = 1;
 }
 
