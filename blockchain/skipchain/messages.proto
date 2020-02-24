@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package skipchain;
+
+message BlockMetaData {
+    bytes signature = 2;
+}

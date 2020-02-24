@@ -14,28 +14,22 @@ import (
 // Roster is a set of addresses.
 type Roster []*onet.Address
 
-// VerifiableBlock is the interface that provides the primitives to verify that a
-// block is valid w.r.t. the genesis block.
-type VerifiableBlock interface {
-	// Payload returns the data of the latest block.
-	Payload() proto.Message
-
-	// Verify makes sure that the integrity of the block from the genesis block
-	// is correct.
-	Verify(publicKeys []kyber.Point) error
-
-	Pack() proto.Message
+// BlockFactory provides primitives to create blocks from a untrusted source.
+type BlockFactory interface {
+	Create(src *VerifiableBlock, originPublicKeys []kyber.Point) (interface{}, error)
 }
 
 // Blockchain is the interface that provides the primitives to interact with the
 // blockchain.
 type Blockchain interface {
+	GetBlockFactory() BlockFactory
+
 	// Store stores any representation of a data structure into a new block.
 	// The implementation is responsible for any validations required.
 	Store(ro Roster, data proto.Message) error
 
-	// GetVerifiableBlock returns a valid proof of the latest block.
-	GetVerifiableBlock() (VerifiableBlock, error)
+	// GetBlock returns a valid proof of the latest block.
+	GetBlock() (*VerifiableBlock, error)
 
 	// Watch takes an observer that will be notified for each new block
 	// definitely appended to the chain.

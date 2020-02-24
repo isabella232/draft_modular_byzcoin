@@ -39,9 +39,12 @@ func TestSkipchain_SimpleScenario(t *testing.T) {
 	err = sc1.Store(ro, ts)
 	require.NoError(t, err)
 
-	proof, err := sc1.GetVerifiableBlock()
+	verifiableBlock, err := sc1.GetBlock()
 	require.NoError(t, err)
-	require.NoError(t, proof.Verify(pubkeys))
+
+	block, err := sc1.GetBlockFactory().Create(verifiableBlock, pubkeys)
+	require.NoError(t, err)
+	require.NotNil(t, block)
 }
 
 func makeRoster(n int) ([]onet.Onet, []*onet.Address) {

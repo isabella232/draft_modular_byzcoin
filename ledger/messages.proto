@@ -15,3 +15,7 @@ message TransactionResult {
     bool accepted = 2;
     repeated bytes instances = 3;
 }
+
+message VerifiableInstance {
+    
+}

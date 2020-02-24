@@ -2,7 +2,6 @@ package skipchain
 
 import (
 	"context"
-	"crypto/sha256"
 	"errors"
 
 	proto "github.com/golang/protobuf/proto"
@@ -16,40 +15,7 @@ import (
 	"go.dedis.ch/phoenix/utils"
 )
 
-// Block is the representation of the data structures that will be linked
-// together.
-type Block struct {
-	Index     uint64
-	Roster    blockchain.Roster
-	Signature cosi.Signature
-	Data      proto.Message
-}
-
-func (b Block) hash() ([]byte, error) {
-	h := sha256.New()
-
-	buffer, err := proto.Marshal(b.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = h.Write(buffer)
-	if err != nil {
-		return nil, err
-	}
-
-	return h.Sum(nil), nil
-}
-
-// Pack returns a network message.
-func (b Block) Pack() proto.Message {
-	any, _ := ptypes.MarshalAny(b.Data)
-
-	return &blockchain.Block{
-		Index: b.Index,
-		Data:  any,
-	}
-}
+//go:generate protoc -I ./ --go_out=./ ./messages.proto
 
 // Validator is the validator provided by the user of the skipchain module.
 type Validator interface {
@@ -68,7 +34,7 @@ func (b blockValidator) Validate(msg proto.Message) ([]byte, error) {
 	}
 
 	var da ptypes.DynamicAny
-	err := ptypes.UnmarshalAny(bm.GetData(), &da)
+	err := ptypes.UnmarshalAny(bm.GetPayload(), &da)
 	if err != nil {
 		return nil, err
 	}
@@ -103,25 +69,33 @@ type Skipchain struct {
 	onet    onet.Onet
 	cosi    cosi.CollectiveSigning
 	watcher utils.Observable
+	factory blockFactory
 }
 
 // NewSkipchain creates a new skipchain-powered blockchain.
 func NewSkipchain(o onet.Onet, v Validator) *Skipchain {
 	db := NewInMemoryDatabase()
 	kp := key.NewKeyPair(pairing.NewSuiteBn256())
+	cosi := cosi.NewBlsCoSi(o, kp, blockValidator{db: db, v: v})
 
 	return &Skipchain{
 		kp:      kp,
 		db:      db,
 		onet:    o,
-		cosi:    cosi.NewBlsCoSi(o, kp, blockValidator{db: db, v: v}),
+		cosi:    cosi,
 		watcher: utils.NewWatcher(),
+		factory: blockFactory{verifier: cosi.MakeVerifier()},
 	}
 }
 
 // PublicKey returns the cosi public key.
 func (s *Skipchain) PublicKey() kyber.Point {
 	return s.kp.Public
+}
+
+// GetBlockFactory returns a factory to create blocks.
+func (s *Skipchain) GetBlockFactory() blockchain.BlockFactory {
+	return s.factory
 }
 
 // Store creates a new block with the data as the payload.
@@ -137,7 +111,7 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 		Data:   data,
 	}
 
-	sig, err := s.cosi.Sign(ro, block.Pack())
+	sig, err := s.cosi.Sign(ro, block.Pack().(*blockchain.VerifiableBlock).GetBlock())
 	if err != nil {
 		return err
 	}
@@ -149,20 +123,20 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 		return err
 	}
 
-	go s.watcher.Notify(&blockchain.Event{Block: block.Pack().(*blockchain.Block)})
+	go s.watcher.Notify(&blockchain.Event{Block: block.Pack().(*blockchain.VerifiableBlock).GetBlock()})
 
 	return nil
 }
 
-// GetVerifiableBlock reads the latest block of the chain and creates a verifiable proof
+// GetBlock reads the latest block of the chain and creates a verifiable proof
 // of the shortest chain from the genesis to the block.
-func (s *Skipchain) GetVerifiableBlock() (blockchain.VerifiableBlock, error) {
+func (s *Skipchain) GetBlock() (*blockchain.VerifiableBlock, error) {
 	block, err := s.db.ReadLast()
 	if err != nil {
 		return nil, err
 	}
 
-	return NewVerifiableBlock(block, s.cosi.MakeVerifier()), nil
+	return block.Pack().(*blockchain.VerifiableBlock), nil
 }
 
 // Watch registers the observer so that it will be notified of new blocks.

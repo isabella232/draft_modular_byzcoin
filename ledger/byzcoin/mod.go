@@ -83,7 +83,7 @@ func (o observer) NotifyCallback(event interface{}) {
 	evt := event.(*blockchain.Event)
 
 	var txr ledger.TransactionResult
-	err := ptypes.UnmarshalAny(evt.Block.GetData(), &txr)
+	err := ptypes.UnmarshalAny(evt.Block.GetPayload(), &txr)
 
 	if err == nil {
 		log.Printf("Block [%d] added to the chain", evt.GetBlock().GetIndex())
