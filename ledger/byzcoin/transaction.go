@@ -45,9 +45,9 @@ func (t Transaction) Pack() (proto.Message, error) {
 	}, nil
 }
 
-type factory struct{}
+type txFactory struct{}
 
-func (f factory) Create(contractID scm.ID, action scm.Action, in proto.Message) (ledger.Transaction, error) {
+func (f txFactory) Create(contractID scm.ID, action scm.Action, in proto.Message) (ledger.Transaction, error) {
 	// TODO: sign tx
 
 	return Transaction{ContractID: contractID, Action: action, Arg: in}, nil

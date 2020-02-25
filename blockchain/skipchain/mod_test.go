@@ -39,10 +39,10 @@ func TestSkipchain_SimpleScenario(t *testing.T) {
 	err = sc1.Store(ro, ts)
 	require.NoError(t, err)
 
-	verifiableBlock, err := sc1.GetBlock()
+	verifiableBlock, err := sc1.GetVerifiableBlock()
 	require.NoError(t, err)
 
-	block, err := sc1.GetBlockFactory().Create(verifiableBlock, pubkeys)
+	block, err := sc1.GetBlockFactory().FromVerifiable(verifiableBlock, pubkeys)
 	require.NoError(t, err)
 	require.NotNil(t, block)
 }

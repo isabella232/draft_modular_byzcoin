@@ -19,7 +19,6 @@ type Byzcoin struct {
 	roster    blockchain.Roster
 	bc        blockchain.Blockchain
 	validator validator
-	factory   factory
 }
 
 // NewByzcoin creates a new byzcoin.
@@ -34,9 +33,14 @@ func NewByzcoin(o onet.Onet, ro blockchain.Roster, executor scm.Executor) *Byzco
 	}
 }
 
-// GetTransactionFactory returns the factory.
+// GetTransactionFactory returns the transaction factory.
 func (b *Byzcoin) GetTransactionFactory() ledger.TransactionFactory {
-	return b.factory
+	return txFactory{}
+}
+
+// GetInstanceFactory returns the instance factory.
+func (b *Byzcoin) GetInstanceFactory() ledger.InstanceFactory {
+	return instanceFactory{}
 }
 
 // AddTransaction adds a transaction to the ledger.
@@ -73,6 +77,17 @@ func (b *Byzcoin) AddTransaction(in ledger.Transaction) error {
 	}
 
 	return nil
+}
+
+// GetVerifiableInstance returns the instance if it exists alongside a proof
+// that it is included in the latest block.
+func (b *Byzcoin) GetVerifiableInstance() (*ledger.VerifiableInstance, error) {
+	block, err := b.bc.GetVerifiableBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ledger.VerifiableInstance{Block: block}, nil
 }
 
 type observer struct {

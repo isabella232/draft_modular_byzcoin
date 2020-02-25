@@ -16,7 +16,7 @@ type Roster []*onet.Address
 
 // BlockFactory provides primitives to create blocks from a untrusted source.
 type BlockFactory interface {
-	Create(src *VerifiableBlock, originPublicKeys []crypto.PublicKey) (interface{}, error)
+	FromVerifiable(src *VerifiableBlock, originPublicKeys []crypto.PublicKey) (interface{}, error)
 }
 
 // Blockchain is the interface that provides the primitives to interact with the
@@ -28,8 +28,12 @@ type Blockchain interface {
 	// The implementation is responsible for any validations required.
 	Store(ro Roster, data proto.Message) error
 
-	// GetBlock returns a valid proof of the latest block.
-	GetBlock() (*VerifiableBlock, error)
+	// GetBlock returns the latest block.
+	GetBlock() (*Block, error)
+
+	// GetVerifiableBlock returns the latest block alongside with a proof from
+	// the genesis block.
+	GetVerifiableBlock() (*VerifiableBlock, error)
 
 	// Watch takes an observer that will be notified for each new block
 	// definitely appended to the chain.

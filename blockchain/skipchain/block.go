@@ -63,12 +63,10 @@ func (b Block) Pack() (proto.Message, error) {
 		}
 	}
 
-	return &blockchain.VerifiableBlock{
-		Block: &blockchain.Block{
-			Index:    b.Index,
-			Payload:  payload,
-			Metadata: metadata,
-		},
+	return &blockchain.Block{
+		Index:    b.Index,
+		Payload:  payload,
+		Metadata: metadata,
 	}, nil
 }
 
@@ -76,7 +74,7 @@ type blockFactory struct {
 	verifier crypto.Verifier
 }
 
-func (f blockFactory) Create(src *blockchain.VerifiableBlock, pubkeys []crypto.PublicKey) (interface{}, error) {
+func (f blockFactory) FromVerifiable(src *blockchain.VerifiableBlock, pubkeys []crypto.PublicKey) (interface{}, error) {
 	var da ptypes.DynamicAny
 	err := ptypes.UnmarshalAny(src.Block.GetPayload(), &da)
 	if err != nil {

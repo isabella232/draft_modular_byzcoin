@@ -106,12 +106,14 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 		Data:   data,
 	}
 
-	protoblock, err := block.Pack()
+	packed, err := block.Pack()
 	if err != nil {
 		return err
 	}
 
-	sig, err := s.cosi.Sign(ro, protoblock.(*blockchain.VerifiableBlock).GetBlock())
+	blockproto := packed.(*blockchain.Block)
+
+	sig, err := s.cosi.Sign(ro, blockproto)
 	if err != nil {
 		return err
 	}
@@ -123,14 +125,13 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 		return err
 	}
 
-	go s.watcher.Notify(&blockchain.Event{Block: protoblock.(*blockchain.VerifiableBlock).GetBlock()})
+	go s.watcher.Notify(&blockchain.Event{Block: blockproto})
 
 	return nil
 }
 
-// GetBlock reads the latest block of the chain and creates a verifiable proof
-// of the shortest chain from the genesis to the block.
-func (s *Skipchain) GetBlock() (*blockchain.VerifiableBlock, error) {
+// GetBlock reads the latest block of the chain.
+func (s *Skipchain) GetBlock() (*blockchain.Block, error) {
 	block, err := s.db.ReadLast()
 	if err != nil {
 		return nil, err
@@ -141,7 +142,18 @@ func (s *Skipchain) GetBlock() (*blockchain.VerifiableBlock, error) {
 		return nil, err
 	}
 
-	return packed.(*blockchain.VerifiableBlock), nil
+	return packed.(*blockchain.Block), nil
+}
+
+// GetVerifiableBlock reads the latest block of the chain and creates a verifiable
+// proof of the shortest chain from the genesis to the block.
+func (s *Skipchain) GetVerifiableBlock() (*blockchain.VerifiableBlock, error) {
+	block, err := s.GetBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &blockchain.VerifiableBlock{Block: block}, nil
 }
 
 // Watch registers the observer so that it will be notified of new blocks.
