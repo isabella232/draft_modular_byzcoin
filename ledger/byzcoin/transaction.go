@@ -3,14 +3,14 @@ package byzcoin
 import (
 	proto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"go.dedis.ch/phoenix/executor"
 	"go.dedis.ch/phoenix/ledger"
-	"go.dedis.ch/phoenix/scm"
 )
 
 // Transaction is the data structure for a transaction specific to Byzcoin.
 type Transaction struct {
-	ContractID scm.ID
-	Action     scm.Action
+	ContractID executor.ContractID
+	Action     executor.Action
 	Arg        proto.Message
 }
 
@@ -25,8 +25,8 @@ func FromProto(msg proto.Message) (Transaction, error) {
 	}
 
 	return Transaction{
-		ContractID: scm.ID(tx.ContractID),
-		Action:     scm.Action(tx.Action),
+		ContractID: executor.ContractID(tx.ContractID),
+		Action:     executor.Action(tx.Action),
 		Arg:        da.Message,
 	}, nil
 }
@@ -47,8 +47,8 @@ func (t Transaction) Pack() (proto.Message, error) {
 
 type txFactory struct{}
 
-func (f txFactory) Create(contractID scm.ID, action scm.Action, in proto.Message) (ledger.Transaction, error) {
+func (f txFactory) Create(key executor.Key, in proto.Message) (ledger.Transaction, error) {
 	// TODO: sign tx
 
-	return Transaction{ContractID: contractID, Action: action, Arg: in}, nil
+	return Transaction{ContractID: key.ContractID, Action: key.Action, Arg: in}, nil
 }

@@ -10,10 +10,11 @@ import (
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/dkg"
 	"go.dedis.ch/phoenix/dkg/pedersen"
+	"go.dedis.ch/phoenix/executor"
+	"go.dedis.ch/phoenix/executor/static"
 	"go.dedis.ch/phoenix/ledger"
 	"go.dedis.ch/phoenix/ledger/byzcoin"
 	"go.dedis.ch/phoenix/onet"
-	"go.dedis.ch/phoenix/scm/ssc"
 )
 
 //go:generate protoc -I ./ --go_out=./ ./messages.proto
@@ -40,7 +41,7 @@ type Calypso struct {
 
 // NewCalypso returns a new instance of the calypso module.
 func NewCalypso(o onet.Onet, ro blockchain.Roster, kp *key.Pair, pubkeys []kyber.Point) *Calypso {
-	sce := ssc.NewExecutor()
+	sce := static.NewExecutor()
 	sce.Register(ContractID, SmartContract{})
 
 	return &Calypso{
@@ -51,7 +52,9 @@ func NewCalypso(o onet.Onet, ro blockchain.Roster, kp *key.Pair, pubkeys []kyber
 
 // AddWrite creates a write instance.
 func (c *Calypso) AddWrite() error {
-	tx, err := c.ledger.GetTransactionFactory().Create(ContractID, ActionWrite, &Write{})
+	key := executor.Key{ContractID: ContractID, Action: ActionWrite}
+
+	tx, err := c.ledger.GetTransactionFactory().Create(key, &Write{})
 	if err != nil {
 		return err
 	}

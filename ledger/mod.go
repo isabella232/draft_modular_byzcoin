@@ -5,7 +5,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"go.dedis.ch/phoenix/encoding"
-	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/executor"
 	"go.dedis.ch/phoenix/state"
 )
 
@@ -20,7 +20,7 @@ type Transaction interface {
 // TransactionFactory is an interface to give an implementation of a ledger
 // a chance to format the transactions with a specific format.
 type TransactionFactory interface {
-	Create(contractID scm.ID, action scm.Action, in proto.Message) (Transaction, error)
+	Create(key executor.Key, in proto.Message) (Transaction, error)
 }
 
 // InstanceFactory is an interface to create instances from verifiables ones.

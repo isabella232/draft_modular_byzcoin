@@ -2,18 +2,18 @@ package naive
 
 import (
 	"go.dedis.ch/phoenix/ac"
-	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/executor"
 )
 
 // accessControl is a naive implementation of the access control that
 // always gives access.
 type accessControl struct{}
 
-func (ac accessControl) CanUpdate(contractID scm.ID, action scm.Action) bool {
+func (ac accessControl) CanUpdate(contractID executor.ContractID, action executor.Action) bool {
 	return false
 }
 
-func (ac accessControl) CanSpawn(contractID scm.ID, action scm.Action) bool {
+func (ac accessControl) CanSpawn(contractID executor.ContractID, action executor.Action) bool {
 	return true
 }
 

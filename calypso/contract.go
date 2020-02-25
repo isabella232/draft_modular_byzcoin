@@ -5,7 +5,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/executor"
 	"go.dedis.ch/phoenix/state"
 )
 
@@ -26,15 +26,8 @@ const (
 // for Calypso.
 type SmartContract struct{}
 
-// Get reads the global state.
-func (sc SmartContract) Get(s state.Snapshot, in proto.Message) (proto.Message, error) {
-	// Returns read and write instances depending on the request.
-
-	return nil, nil
-}
-
-// Post creates the write and read instances.
-func (sc SmartContract) Post(s state.Snapshot, action scm.Action, in proto.Message) ([]*state.Instance, error) {
+// Apply creates the write and read instances.
+func (sc SmartContract) Apply(s state.Snapshot, action executor.Action, in proto.Message) ([]*state.Instance, error) {
 	instances := []*state.Instance{}
 
 	switch action {

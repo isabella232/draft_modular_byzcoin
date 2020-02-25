@@ -8,9 +8,9 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/blockchain/skipchain"
+	"go.dedis.ch/phoenix/executor"
 	"go.dedis.ch/phoenix/ledger"
 	"go.dedis.ch/phoenix/onet"
-	"go.dedis.ch/phoenix/scm"
 	"go.dedis.ch/phoenix/state/mem"
 )
 
@@ -22,9 +22,9 @@ type Byzcoin struct {
 }
 
 // NewByzcoin creates a new byzcoin.
-func NewByzcoin(o onet.Onet, ro blockchain.Roster, executor scm.Executor) *Byzcoin {
+func NewByzcoin(o onet.Onet, ro blockchain.Roster, registry executor.Registry) *Byzcoin {
 	store := mem.NewStore()
-	validator := newValidator(store, executor)
+	validator := newValidator(store, registry)
 
 	return &Byzcoin{
 		roster:    ro,

@@ -6,22 +6,22 @@ import (
 	"go.dedis.ch/phoenix/ac"
 	"go.dedis.ch/phoenix/ac/naive"
 	"go.dedis.ch/phoenix/blockchain/skipchain"
+	"go.dedis.ch/phoenix/executor"
 	"go.dedis.ch/phoenix/ledger"
-	"go.dedis.ch/phoenix/scm"
 	"go.dedis.ch/phoenix/state"
 )
 
 type validator struct {
 	store    state.Store
 	ac       ac.AccessControlStore
-	executor scm.Executor
+	registry executor.Registry
 }
 
-func newValidator(store state.Store, exec scm.Executor) validator {
+func newValidator(store state.Store, reg executor.Registry) validator {
 	return validator{
 		ac:       naive.Store{},
 		store:    store,
-		executor: exec,
+		registry: reg,
 	}
 }
 
@@ -31,7 +31,9 @@ func (v validator) execute(tx Transaction) ([]*state.Instance, error) {
 		return nil, err
 	}
 
-	instances, err := v.executor.Execute(snapshot, tx.ContractID, tx.Action, tx.Arg)
+	key := executor.Key{ContractID: tx.ContractID, Action: tx.Action}
+
+	instances, err := v.registry.Execute(snapshot, key, tx.Arg)
 	if err != nil {
 		return nil, err
 	}
