@@ -4,16 +4,16 @@ import (
 	"errors"
 	"sync"
 
-	"go.dedis.ch/phoenix/globalstate"
+	"go.dedis.ch/phoenix/state"
 )
 
 // Key is the type of the instance keys.
 type Key [32]byte
 
 // InMemorySnapshot is an immutable state of the store.
-type InMemorySnapshot map[Key]*globalstate.Instance
+type InMemorySnapshot map[Key]*state.Instance
 
-func (s InMemorySnapshot) Read(key []byte) (*globalstate.Instance, error) {
+func (s InMemorySnapshot) Read(key []byte) (*state.Instance, error) {
 	k := Key{}
 	copy(k[:], key)
 
@@ -26,11 +26,11 @@ type io struct {
 	snapshot InMemorySnapshot
 }
 
-func (u io) Read(key []byte) (*globalstate.Instance, error) {
+func (u io) Read(key []byte) (*state.Instance, error) {
 	return u.snapshot.Read(key)
 }
 
-func (u io) Write(instance *globalstate.Instance) error {
+func (u io) Write(instance *state.Instance) error {
 	k := Key{}
 	copy(k[:], instance.GetKey())
 
@@ -53,7 +53,7 @@ func NewStore() *InMemoryStore {
 }
 
 // Update adds a snapshot to the store.
-func (s *InMemoryStore) Update(fn globalstate.Updater) error {
+func (s *InMemoryStore) Update(fn state.Updater) error {
 	s.Lock()
 	defer s.Unlock()
 
@@ -83,7 +83,7 @@ func (s *InMemoryStore) Remove(version uint64) error {
 }
 
 // Snapshot returns the snapshot for the given version.
-func (s *InMemoryStore) Snapshot(version uint64) (globalstate.Snapshot, error) {
+func (s *InMemoryStore) Snapshot(version uint64) (state.Snapshot, error) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -95,7 +95,7 @@ func (s *InMemoryStore) Snapshot(version uint64) (globalstate.Snapshot, error) {
 }
 
 // GetCurrent returns the latest version of the store.
-func (s *InMemoryStore) GetCurrent() (globalstate.Snapshot, error) {
+func (s *InMemoryStore) GetCurrent() (state.Snapshot, error) {
 	s.Lock()
 	defer s.Unlock()
 

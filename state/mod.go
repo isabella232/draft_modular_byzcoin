@@ -1,4 +1,4 @@
-package globalstate
+package state
 
 //go:generate protoc -I ./ --go_out=./ ./messages.proto
 

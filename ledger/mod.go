@@ -4,16 +4,17 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
-	"go.dedis.ch/phoenix/globalstate"
+	"go.dedis.ch/phoenix/encoding"
 	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/state"
 )
 
-//go:generate protoc -I ./ --proto_path=../ --go_out=Mglobalstate/messages.proto=go.dedis.ch/phoenix/globalstate,Mblockchain/messages.proto=go.dedis.ch/phoenix/blockchain:. ./messages.proto
+//go:generate protoc -I ./ --proto_path=../ --go_out=Mstate/messages.proto=go.dedis.ch/phoenix/state,Mblockchain/messages.proto=go.dedis.ch/phoenix/blockchain:. ./messages.proto
 
 // Transaction is a set of instructions to be applied to the global state
 // one after another.
 type Transaction interface {
-	Pack() (proto.Message, error)
+	encoding.Packable
 }
 
 // TransactionFactory is an interface to give an implementation of a ledger
@@ -24,7 +25,7 @@ type TransactionFactory interface {
 
 // InstanceFactory is an interface to create instances from verifiables ones.
 type InstanceFactory interface {
-	FromVerifiable(src *VerifiableInstance) (*globalstate.Instance, error)
+	FromVerifiable(src *VerifiableInstance) (*state.Instance, error)
 }
 
 // Ledger is the interface that provides primitives to update a public ledger

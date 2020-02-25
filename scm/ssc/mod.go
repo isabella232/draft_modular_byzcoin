@@ -4,15 +4,15 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"go.dedis.ch/phoenix/globalstate"
 	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/state"
 )
 
 // StaticSmartContract is the interface to implement to register a smart
 // contract.
 type StaticSmartContract interface {
-	Get(snapshot globalstate.Snapshot, in proto.Message) (proto.Message, error)
-	Post(snapshot globalstate.Snapshot, action scm.Action, in proto.Message) ([]*globalstate.Instance, error)
+	Get(snapshot state.Snapshot, in proto.Message) (proto.Message, error)
+	Post(snapshot state.Snapshot, action scm.Action, in proto.Message) ([]*state.Instance, error)
 }
 
 // StaticExecutor registers the smart contracts statically.
@@ -40,7 +40,7 @@ func (e *StaticExecutor) Register(id scm.ID, sc StaticSmartContract) error {
 }
 
 // Request executes the smart contract to read the current state.
-func (e *StaticExecutor) Request(snapshot globalstate.Snapshot, id scm.ID, in proto.Message) (proto.Message, error) {
+func (e *StaticExecutor) Request(snapshot state.Snapshot, id scm.ID, in proto.Message) (proto.Message, error) {
 	sc, ok := e.contracts[id]
 	if !ok {
 		return nil, errors.New("no contract matching the identifier")
@@ -55,7 +55,7 @@ func (e *StaticExecutor) Request(snapshot globalstate.Snapshot, id scm.ID, in pr
 }
 
 // Execute runs a smart contract per its identifier.
-func (e *StaticExecutor) Execute(snapshot globalstate.Snapshot, id scm.ID, action scm.Action, in proto.Message) ([]*globalstate.Instance, error) {
+func (e *StaticExecutor) Execute(snapshot state.Snapshot, id scm.ID, action scm.Action, in proto.Message) ([]*state.Instance, error) {
 	sc, ok := e.contracts[id]
 	if !ok {
 		return nil, errors.New("no contract matching the identifier")

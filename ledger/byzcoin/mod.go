@@ -8,10 +8,10 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/blockchain/skipchain"
-	"go.dedis.ch/phoenix/globalstate/mem"
 	"go.dedis.ch/phoenix/ledger"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/state/mem"
 )
 
 // Byzcoin is a ledger implementation.

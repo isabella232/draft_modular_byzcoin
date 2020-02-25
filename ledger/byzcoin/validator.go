@@ -6,18 +6,18 @@ import (
 	"go.dedis.ch/phoenix/ac"
 	"go.dedis.ch/phoenix/ac/naive"
 	"go.dedis.ch/phoenix/blockchain/skipchain"
-	"go.dedis.ch/phoenix/globalstate"
 	"go.dedis.ch/phoenix/ledger"
 	"go.dedis.ch/phoenix/scm"
+	"go.dedis.ch/phoenix/state"
 )
 
 type validator struct {
-	store    globalstate.Store
+	store    state.Store
 	ac       ac.AccessControlStore
 	executor scm.Executor
 }
 
-func newValidator(store globalstate.Store, exec scm.Executor) validator {
+func newValidator(store state.Store, exec scm.Executor) validator {
 	return validator{
 		ac:       naive.Store{},
 		store:    store,
@@ -25,7 +25,7 @@ func newValidator(store globalstate.Store, exec scm.Executor) validator {
 	}
 }
 
-func (v validator) execute(tx Transaction) ([]*globalstate.Instance, error) {
+func (v validator) execute(tx Transaction) ([]*state.Instance, error) {
 	snapshot, err := v.store.GetCurrent()
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (v validator) Validate(block skipchain.Block) error {
 		return err
 	}
 
-	err = v.store.Update(func(io globalstate.IO) error {
+	err = v.store.Update(func(io state.IO) error {
 		for _, inst := range instances {
 			err := io.Write(inst)
 			if err != nil {

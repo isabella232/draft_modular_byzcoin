@@ -3,7 +3,7 @@ syntax = "proto3";
 package ledger;
 
 import "google/protobuf/any.proto";
-import "globalstate/messages.proto";
+import "state/messages.proto";
 import "blockchain/messages.proto";
 
 message TransactionInput {
@@ -19,6 +19,6 @@ message TransactionResult {
 }
 
 message VerifiableInstance {
-    globalstate.Instance instance = 1;
+    state.Instance instance = 1;
     blockchain.VerifiableBlock block = 2;
 }
