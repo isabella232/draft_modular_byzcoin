@@ -1,4 +1,4 @@
-package ac
+package perm
 
 import "go.dedis.ch/phoenix/executor"
 

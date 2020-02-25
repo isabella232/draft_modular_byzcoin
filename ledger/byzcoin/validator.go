@@ -3,25 +3,25 @@ package byzcoin
 import (
 	"errors"
 
-	"go.dedis.ch/phoenix/ac"
-	"go.dedis.ch/phoenix/ac/naive"
 	"go.dedis.ch/phoenix/blockchain/skipchain"
 	"go.dedis.ch/phoenix/executor"
 	"go.dedis.ch/phoenix/ledger"
+	"go.dedis.ch/phoenix/perm"
+	"go.dedis.ch/phoenix/perm/naive"
 	"go.dedis.ch/phoenix/state"
 )
 
 type validator struct {
-	store    state.Store
-	ac       ac.AccessControlStore
-	registry executor.Registry
+	store     state.Store
+	permStore perm.AccessControlStore
+	registry  executor.Registry
 }
 
 func newValidator(store state.Store, reg executor.Registry) validator {
 	return validator{
-		ac:       naive.Store{},
-		store:    store,
-		registry: reg,
+		permStore: naive.Store{},
+		store:     store,
+		registry:  reg,
 	}
 }
 
@@ -47,7 +47,7 @@ func (v validator) execute(tx Transaction) ([]*state.Instance, error) {
 		if old != nil {
 			// A previous instance already exist thus it makes sure the previous
 			// access control allows the update.
-			ac, err := v.ac.Get(old.GetAccessControl())
+			ac, err := v.permStore.Get(old.GetAccessControl())
 			if err != nil {
 				return nil, err
 			}
@@ -58,7 +58,7 @@ func (v validator) execute(tx Transaction) ([]*state.Instance, error) {
 		} else {
 			// New instance thus it makes sure the control access exists with
 			// sufficient rights.
-			ac, err := v.ac.Get(instance.GetAccessControl())
+			ac, err := v.permStore.Get(instance.GetAccessControl())
 			if err != nil {
 				return nil, err
 			}

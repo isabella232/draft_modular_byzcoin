@@ -1,8 +1,8 @@
 package naive
 
 import (
-	"go.dedis.ch/phoenix/ac"
 	"go.dedis.ch/phoenix/executor"
+	"go.dedis.ch/phoenix/perm"
 )
 
 // accessControl is a naive implementation of the access control that
@@ -21,6 +21,6 @@ func (ac accessControl) CanSpawn(contractID executor.ContractID, action executor
 type Store struct{}
 
 // Get returns a naive access control.
-func (s Store) Get(id []byte) (ac.AccessControl, error) {
+func (s Store) Get(id []byte) (perm.AccessControl, error) {
 	return accessControl{}, nil
 }
