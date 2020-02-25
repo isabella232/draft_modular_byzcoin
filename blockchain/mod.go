@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
-	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/phoenix/crypto"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/utils"
 )
@@ -16,7 +16,7 @@ type Roster []*onet.Address
 
 // BlockFactory provides primitives to create blocks from a untrusted source.
 type BlockFactory interface {
-	Create(src *VerifiableBlock, originPublicKeys []kyber.Point) (interface{}, error)
+	Create(src *VerifiableBlock, originPublicKeys []crypto.PublicKey) (interface{}, error)
 }
 
 // Blockchain is the interface that provides the primitives to interact with the

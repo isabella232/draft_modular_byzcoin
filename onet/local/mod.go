@@ -7,11 +7,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/phoenix/onet"
 )
-
-var suite = pairing.NewSuiteBn256()
 
 type localManager struct {
 	instances map[string]*Onet

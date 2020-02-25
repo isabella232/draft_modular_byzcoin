@@ -3,11 +3,11 @@ package cosi
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
-	"go.dedis.ch/kyber/v3/sign/bls"
 	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/blockchain"
+	"go.dedis.ch/phoenix/crypto"
+	"go.dedis.ch/phoenix/crypto/bls"
 	"go.dedis.ch/phoenix/onet"
 )
 
@@ -15,18 +15,12 @@ import (
 
 var suite = pairing.NewSuiteBn256()
 
-// Verifier is the function used to make sure a signature matches the message
-// with a specific list of identities.
-type Verifier func(pubkeys []kyber.Point, msg []byte, sig []byte) error
-
-// Signature is the response type of a collective signing protocol.
-type Signature []byte
-
 // CollectiveSigning is the interface that provides the primitives to sign
 // a message by members of a network.
 type CollectiveSigning interface {
-	Sign(ro blockchain.Roster, msg proto.Message) (Signature, error)
-	MakeVerifier() Verifier
+	PublicKey() crypto.PublicKey
+	Sign(ro blockchain.Roster, msg proto.Message) (crypto.Signature, error)
+	MakeVerifier() crypto.Verifier
 }
 
 // Validator is the interface that is used to validate a block.
@@ -37,18 +31,28 @@ type Validator interface {
 // BlsCoSi is an implementation of the collective signing interface by
 // using BLS signatures.
 type BlsCoSi struct {
-	rpc onet.RPC
+	rpc    onet.RPC
+	signer crypto.AggregateSigner
 }
 
 // NewBlsCoSi returns a new collective signing instance.
-func NewBlsCoSi(o onet.Onet, kp *key.Pair, v Validator) *BlsCoSi {
+func NewBlsCoSi(o onet.Onet, v Validator) *BlsCoSi {
+	kp := key.NewKeyPair(pairing.NewSuiteBn256())
+	signer := bls.NewSigner(kp)
+
 	return &BlsCoSi{
-		rpc: o.MakeRPC("cosi", newHandler(o, kp, v)),
+		rpc:    o.MakeRPC("cosi", newHandler(o, signer, v)),
+		signer: signer,
 	}
 }
 
+// PublicKey returns the public key for this instance.
+func (cosi *BlsCoSi) PublicKey() crypto.PublicKey {
+	return cosi.signer.PublicKey()
+}
+
 // Sign returns the collective signature of the block.
-func (cosi *BlsCoSi) Sign(ro blockchain.Roster, msg proto.Message) (Signature, error) {
+func (cosi *BlsCoSi) Sign(ro blockchain.Roster, msg proto.Message) (crypto.Signature, error) {
 	data, err := ptypes.MarshalAny(msg)
 	if err != nil {
 		return nil, err
@@ -59,18 +63,22 @@ func (cosi *BlsCoSi) Sign(ro blockchain.Roster, msg proto.Message) (Signature, e
 		return nil, err
 	}
 
-	var agg []byte
+	var agg crypto.Signature
 	ok := true
 	var resp proto.Message
 	for ok {
 		resp, ok = <-msgs
 		if ok {
 			reply := resp.(*SignatureResponse)
+			sig, err := cosi.signer.GetSignatureFactory().FromAny(reply.GetSignature())
+			if err != nil {
+				return nil, err
+			}
 
 			if agg == nil {
-				agg = reply.GetSignature()
+				agg = sig
 			} else {
-				agg, err = bls.AggregateSignatures(suite, agg, reply.GetSignature())
+				agg, err = cosi.signer.Aggregate(agg, sig)
 				if err != nil {
 					return nil, err
 				}
@@ -83,18 +91,6 @@ func (cosi *BlsCoSi) Sign(ro blockchain.Roster, msg proto.Message) (Signature, e
 
 // MakeVerifier returns a verifier that can be used to verify signatures
 // from this collective signing.
-func (cosi *BlsCoSi) MakeVerifier() Verifier {
-	return blsVerifier
-}
-
-// BlsVerifier verifies that a signature matches the message for the roster public keys.
-func blsVerifier(publicKeys []kyber.Point, msg []byte, sig []byte) error {
-	aggKey := bls.AggregatePublicKeys(suite, publicKeys...)
-
-	err := bls.Verify(suite, aggKey, msg, sig)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (cosi *BlsCoSi) MakeVerifier() crypto.Verifier {
+	return bls.NewVerifier()
 }

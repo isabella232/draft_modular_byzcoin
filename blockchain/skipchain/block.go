@@ -5,9 +5,9 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"go.dedis.ch/kyber/v3"
+	any "github.com/golang/protobuf/ptypes/any"
 	"go.dedis.ch/phoenix/blockchain"
-	"go.dedis.ch/phoenix/blockchain/skipchain/cosi"
+	"go.dedis.ch/phoenix/crypto"
 )
 
 // Block is the representation of the data structures that will be linked
@@ -15,7 +15,7 @@ import (
 type Block struct {
 	Index     uint64
 	Roster    blockchain.Roster
-	Signature cosi.Signature
+	Signature crypto.Signature
 	Data      proto.Message
 }
 
@@ -36,11 +36,32 @@ func (b Block) hash() ([]byte, error) {
 }
 
 // Pack returns a network message.
-func (b Block) Pack() proto.Message {
-	payload, _ := ptypes.MarshalAny(b.Data)
-	metadata, _ := ptypes.MarshalAny(&BlockMetaData{
-		Signature: b.Signature,
-	})
+func (b Block) Pack() (proto.Message, error) {
+	payload, err := ptypes.MarshalAny(b.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	var metadata *any.Any
+
+	if b.Signature != nil {
+		sig, err := b.Signature.Pack()
+		if err != nil {
+			return nil, err
+		}
+
+		sigany, err := ptypes.MarshalAny(sig)
+		if err != nil {
+			return nil, err
+		}
+
+		metadata, err = ptypes.MarshalAny(&BlockMetaData{
+			Signature: sigany,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return &blockchain.VerifiableBlock{
 		Block: &blockchain.Block{
@@ -48,14 +69,14 @@ func (b Block) Pack() proto.Message {
 			Payload:  payload,
 			Metadata: metadata,
 		},
-	}
+	}, nil
 }
 
 type blockFactory struct {
-	verifier cosi.Verifier
+	verifier crypto.Verifier
 }
 
-func (f blockFactory) Create(src *blockchain.VerifiableBlock, pubkeys []kyber.Point) (interface{}, error) {
+func (f blockFactory) Create(src *blockchain.VerifiableBlock, pubkeys []crypto.PublicKey) (interface{}, error) {
 	var da ptypes.DynamicAny
 	err := ptypes.UnmarshalAny(src.Block.GetPayload(), &da)
 	if err != nil {
@@ -68,10 +89,15 @@ func (f blockFactory) Create(src *blockchain.VerifiableBlock, pubkeys []kyber.Po
 		return Block{}, err
 	}
 
+	sig, err := f.verifier.GetSignatureFactory().FromAny(metadata.GetSignature())
+	if err != nil {
+		return Block{}, err
+	}
+
 	block := Block{
 		Index:     src.Block.GetIndex(),
 		Data:      da.Message,
-		Signature: metadata.GetSignature(),
+		Signature: sig,
 	}
 
 	hash, err := block.hash()
@@ -79,7 +105,7 @@ func (f blockFactory) Create(src *blockchain.VerifiableBlock, pubkeys []kyber.Po
 		return block, err
 	}
 
-	err = f.verifier(pubkeys, hash, block.Signature)
+	err = f.verifier.Verify(pubkeys, hash, block.Signature)
 	if err != nil {
 		return block, err
 	}

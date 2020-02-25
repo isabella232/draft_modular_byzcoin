@@ -9,5 +9,5 @@ message SignatureRequest {
 }
 
 message SignatureResponse {
-    bytes signature = 1;
+    google.protobuf.Any signature = 1;
 }

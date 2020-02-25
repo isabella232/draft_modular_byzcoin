@@ -6,8 +6,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/require"
-	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/phoenix/blockchain"
+	"go.dedis.ch/phoenix/crypto"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/onet/local"
 )
@@ -26,7 +26,7 @@ func TestSkipchain_SimpleScenario(t *testing.T) {
 	sc2 := NewSkipchain(onets[1], testValidator{})
 	sc3 := NewSkipchain(onets[2], testValidator{})
 
-	pubkeys := []kyber.Point{sc1.PublicKey(), sc2.PublicKey(), sc3.PublicKey()}
+	pubkeys := []crypto.PublicKey{sc1.PublicKey(), sc2.PublicKey(), sc3.PublicKey()}
 
 	ts := ptypes.TimestampNow()
 

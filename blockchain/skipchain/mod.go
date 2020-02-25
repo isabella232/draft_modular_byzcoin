@@ -6,11 +6,9 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/kyber/v3/pairing"
-	"go.dedis.ch/kyber/v3/util/key"
 	"go.dedis.ch/phoenix/blockchain"
 	"go.dedis.ch/phoenix/blockchain/skipchain/cosi"
+	"go.dedis.ch/phoenix/crypto"
 	"go.dedis.ch/phoenix/onet"
 	"go.dedis.ch/phoenix/utils"
 )
@@ -64,7 +62,6 @@ func (b blockValidator) Validate(msg proto.Message) ([]byte, error) {
 // Skipchain is an implementation of the Blockchain interface that is using
 // collective signing to create links between the blocks.
 type Skipchain struct {
-	kp      *key.Pair
 	db      Database
 	onet    onet.Onet
 	cosi    cosi.CollectiveSigning
@@ -75,11 +72,9 @@ type Skipchain struct {
 // NewSkipchain creates a new skipchain-powered blockchain.
 func NewSkipchain(o onet.Onet, v Validator) *Skipchain {
 	db := NewInMemoryDatabase()
-	kp := key.NewKeyPair(pairing.NewSuiteBn256())
-	cosi := cosi.NewBlsCoSi(o, kp, blockValidator{db: db, v: v})
+	cosi := cosi.NewBlsCoSi(o, blockValidator{db: db, v: v})
 
 	return &Skipchain{
-		kp:      kp,
 		db:      db,
 		onet:    o,
 		cosi:    cosi,
@@ -89,8 +84,8 @@ func NewSkipchain(o onet.Onet, v Validator) *Skipchain {
 }
 
 // PublicKey returns the cosi public key.
-func (s *Skipchain) PublicKey() kyber.Point {
-	return s.kp.Public
+func (s *Skipchain) PublicKey() crypto.PublicKey {
+	return s.cosi.PublicKey()
 }
 
 // GetBlockFactory returns a factory to create blocks.
@@ -111,7 +106,12 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 		Data:   data,
 	}
 
-	sig, err := s.cosi.Sign(ro, block.Pack().(*blockchain.VerifiableBlock).GetBlock())
+	protoblock, err := block.Pack()
+	if err != nil {
+		return err
+	}
+
+	sig, err := s.cosi.Sign(ro, protoblock.(*blockchain.VerifiableBlock).GetBlock())
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (s *Skipchain) Store(ro blockchain.Roster, data proto.Message) error {
 		return err
 	}
 
-	go s.watcher.Notify(&blockchain.Event{Block: block.Pack().(*blockchain.VerifiableBlock).GetBlock()})
+	go s.watcher.Notify(&blockchain.Event{Block: protoblock.(*blockchain.VerifiableBlock).GetBlock()})
 
 	return nil
 }
@@ -136,7 +136,12 @@ func (s *Skipchain) GetBlock() (*blockchain.VerifiableBlock, error) {
 		return nil, err
 	}
 
-	return block.Pack().(*blockchain.VerifiableBlock), nil
+	packed, err := block.Pack()
+	if err != nil {
+		return nil, err
+	}
+
+	return packed.(*blockchain.VerifiableBlock), nil
 }
 
 // Watch registers the observer so that it will be notified of new blocks.
